@@ -1,114 +1,75 @@
+import streamlit as st
+import pandas as pd
 import json
-import csv
-from datetime import datetime
 import os
+from datetime import datetime
 
-# Ayarlar
-DATA_FILE = "data.json"
-MASTER_DATA_FILE = "FiyatCep_MasterData_Sadelestirilmis_v2.xlsx - MasterData.csv"
+# Dosya Yolları
+DATA_FILE = 'data.json'
+MASTER_DATA_FILE = 'FiyatCep_MasterData_Sadelestirilmis_v2.xlsx - MasterData.csv'
 
+st.set_page_config(page_title="FiyatCep", page_icon="🛒")
+st.title("🛒 FiyatCep: Tasarruf Asistanı")
 
-def master_data_yukle():
-    """CSV dosyasindaki urunleri ve kategorileri yukler."""
-    urunler = {}
+# Master Veriyi Yükle
+@st.cache_data
+def load_master_data():
     try:
-        with open(MASTER_DATA_FILE, mode="r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                kat = row["Kategori"]
-                urun = row["Ürün Adı"]
-                if kat not in urunler:
-                    urunler[kat] = []
-                urunler[kat].append(urun)
-        return urunler
-    except Exception as e:
-        print(f"Master veri yuklenemedi: {e}")
-        return {}
+        df = pd.read_csv(MASTER_DATA_FILE)
+        return df
+    except:
+        return pd.DataFrame(columns=["Kategori", "Ürün Adı"])
 
+master_df = load_master_data()
 
-def fiyat_kaydet(market, kategori, urun, fiyat):
-    veriler = veri_yukle()
-    yeni_kayit = {
-        "tarih": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "kategori": kategori,
+# Veri Saklama Fonksiyonları
+def save_price(market, category, product, price):
+    new_entry = {
+        "tarih": datetime.now().strftime("%Y-%m-%d"),
         "market": market,
-        "urun": urun,
-        "fiyat": float(fiyat),
+        "kategori": category,
+        "urun": product,
+        "fiyat": float(price)
     }
-    veriler.append(yeni_kayit)
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(veriler, f, ensure_ascii=False, indent=4)
-    print(f"\n{urun} icin {fiyat} TL fiyati {market} marketine kaydedildi.")
+    data = []
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    data.append(new_entry)
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
+# --- ARAYÜZ (Görsel Taslağınız) ---
+tab1, tab2 = st.tabs(["Fiyat Girişi", "En Ucuz Rota"])
 
-def veri_yukle():
-    if not os.path.exists(DATA_FILE):
-        return []
-    try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return []
+with tab1:
+    st.subheader("Ürün Kaydet")
+    market = st.text_input("Market Adı", placeholder="Örn: Migros")
+    
+    category = st.selectbox("Kategori Seçin", master_df["Kategori"].unique())
+    products = master_df[master_df["Kategori"] == category]["Ürün Adı"].tolist()
+    product = st.selectbox("Ürün Seçin", products)
+    
+    price = st.number_input("Fiyat (TL)", min_value=0.0, step=0.5)
+    
+    if st.button("Kaydet ve Devam Et"):
+        save_price(market, category, product, price)
+        st.success(f"{product} başarıyla kaydedildi!")
 
-
-def rota_hesapla():
-    veriler = veri_yukle()
-    if not veriler:
-        print("\nKarsilastirma yapilacak veri bulunamadi.")
-        return
-
-    en_ucuzlar = {}
-    for kayit in veriler:
-        urun = kayit["urun"]
-        fiyat = kayit["fiyat"]
-        if urun not in en_ucuzlar or fiyat < en_ucuzlar[urun]["fiyat"]:
-            en_ucuzlar[urun] = {"fiyat": fiyat, "market": kayit["market"]}
-
-    print("\n" + "=" * 45)
-    print("      EN UCUZ ALISVERIS ROTANIZ")
-    print("=" * 45)
-    toplam = 0
-    for urun, bilgi in en_ucuzlar.items():
-        print(f"- {urun.ljust(20)} | {bilgi['market'].ljust(12)} | {bilgi['fiyat']} TL")
-        toplam += bilgi["fiyat"]
-    print("-" * 45)
-    print(f"TOPLAM TASARRUFLU TUTAR: {toplam} TL")
-    print("=" * 45)
-
-
-# --- ANA PROGRAM ---
-if __name__ == "__main__":
-    master_liste = master_data_yukle()
-
-    while True:
-        print(f"\n{'*' * 10} FIYATCEP SISTEMI {'*' * 10}")
-        print("1. Market Fiyati Gir")
-        print("2. En Ucuz Rotayi Hesapla")
-        print("3. Cikis")
-        secim = input("Islem secin: ")
-
-        if secim == "1":
-            market = input("Market Adi (Orn: Migros, Sok): ")
-
-            # Kategori secimi
-            kategoriler = list(master_liste.keys())
-            print("\nKategoriler:")
-            for i, kat in enumerate(kategoriler, 1):
-                print(f"{i}. {kat}")
-            kat_no = int(input("Kategori No: "))
-            secilen_kat = kategoriler[kat_no - 1]
-
-            # Urun secimi
-            print(f"\n{secilen_kat} Urunleri:")
-            for i, urun in enumerate(master_liste[secilen_kat], 1):
-                print(f"{i}. {urun}")
-            urun_no = int(input("Urun No: "))
-            secilen_urun = master_liste[secilen_kat][urun_no - 1]
-
-            fiyat = input(f"{secilen_urun} Fiyati: ")
-            fiyat_kaydet(market, secilen_kat, secilen_urun, fiyat)
-
-        elif secim == "2":
-            rota_hesapla()
-        elif secim == "3":
-            break
+with tab2:
+    st.subheader("📍 Optimum Alışveriş Rotası")
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        if data:
+            df_prices = pd.DataFrame(data)
+            # Her ürün için en ucuz marketi bul
+            idx = df_prices.groupby('urun')['fiyat'].idxmin()
+            cheapest_items = df_prices.loc[idx]
+            
+            st.table(cheapest_items[['urun', 'market', 'fiyat']])
+            st.metric("Toplam Tasarruflu Tutar", f"{cheapest_items['fiyat'].sum()} TL")
+        else:
+            st.info("Henüz veri girilmemiş.")
+        
