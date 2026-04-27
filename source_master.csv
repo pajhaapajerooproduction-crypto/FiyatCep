@@ -1,0 +1,62 @@
+source_id,source_type,source_name,related_brand,sector_scope,category_scope,product_count,is_brand_store,is_user_created,note
+SRC_GIDA_A101,Gıda Marketi,A-101,,Gıda,,0,0,0,Kullanıcı isteğiyle kaynak listesine eklendi
+SRC_GIDA_ANPA_GROSS,Gıda Marketi,Anpa Gross,,Gıda,,0,0,0,Kullanıcı isteğiyle kaynak listesine eklendi
+SRC_GIDA_BIM,Gıda Marketi,Bim,,Gıda,,0,0,0,Kullanıcı isteğiyle kaynak listesine eklendi
+SRC_GIDA_FILE,Gıda Marketi,File,,Gıda,,0,0,0,Kullanıcı isteğiyle kaynak listesine eklendi
+SRC_GIDA_KIM,Gıda Marketi,Kim,,Gıda,,0,0,0,Kullanıcı isteğiyle kaynak listesine eklendi
+SRC_GIDA_MIGROS,Gıda Marketi,Migros,,Gıda,,0,0,0,Kullanıcı isteğiyle kaynak listesine eklendi
+SRC_GIDA_ONUR,Gıda Marketi,Onur,,Gıda,,0,0,0,Kullanıcı isteğiyle kaynak listesine eklendi
+SRC_GIDA_CAGRI,Gıda Marketi,Çağrı,,Gıda,,0,0,0,Kullanıcı isteğiyle kaynak listesine eklendi
+SRC_GIDA_SOK,Gıda Marketi,Şok,,Gıda,,0,0,0,Kullanıcı isteğiyle kaynak listesine eklendi
+SRC_ELEKTRONIK_MEDIAMARKT,Elektronik Marketi,MediaMarkt,,Elektronik,,0,0,0,Kullanıcı örneğine göre eklendi
+SRC_ELEKTRONIK_TEKNOZA,Elektronik Marketi,Teknosa,,Elektronik,,0,0,0,Kullanıcı örneğine göre eklendi
+SRC_ELEKTRONIK_VATAN,Elektronik Marketi,Vatan,,Elektronik,,0,0,0,Kullanıcı örneğine göre eklendi
+SRC_ONLINE_HEPSIBURADA,Online Mağaza,Hepsiburada,,,,0,0,0,Kullanıcı örneğine göre eklendi
+SRC_ONLINE_TRENDYOL,Online Mağaza,Trendyol,,,,0,0,0,Kullanıcı örneğine göre eklendi
+S0034,Marka Mağazası,Philips,Philips,Elektronik,Ağız & Diş Bakımı | Ev & Yaşam | Kişisel Bakım | Saç Bakım Cihazları | Tıraş & Epilasyon,151,1,0,Datadaki marka kolonundan otomatik üretildi
+S0039,Marka Mağazası,Samsung,Samsung,Elektronik,Beyaz Eşya & Ev Aletleri | Bilgisayar & Tablet | Ev & Yaşam | Telefon,82,1,0,Datadaki marka kolonundan otomatik üretildi
+S0010,Marka Mağazası,Bosch,Bosch,Elektronik,Beyaz Eşya & Ev Aletleri | Ev & Yaşam,80,1,0,Datadaki marka kolonundan otomatik üretildi
+S0003,Marka Mağazası,Apple,Apple,Elektronik,Bilgisayar & Tablet | Telefon,77,1,0,Datadaki marka kolonundan otomatik üretildi
+S0011,Marka Mağazası,Braun,Braun,Elektronik,Ev & Yaşam | Kişisel Bakım | Saç Bakım Cihazları | Tıraş & Epilasyon,73,1,0,Datadaki marka kolonundan otomatik üretildi
+S0007,Marka Mağazası,Asus,Asus,Elektronik,Bilgisayar & Tablet,71,1,0,Datadaki marka kolonundan otomatik üretildi
+S0027,Marka Mağazası,Lenovo,Lenovo,Elektronik,Bilgisayar & Tablet,70,1,0,Datadaki marka kolonundan otomatik üretildi
+S0020,Marka Mağazası,Grundig,Grundig,Elektronik,Beyaz Eşya & Ev Aletleri | Ev & Yaşam | Kişisel Bakım | Saç Bakım Cihazları,63,1,0,Datadaki marka kolonundan otomatik üretildi
+S0004,Marka Mağazası,Arçelik,Arçelik,Elektronik,Beyaz Eşya & Ev Aletleri | Ev & Yaşam,49,1,0,Datadaki marka kolonundan otomatik üretildi
+S0002,Marka Mağazası,Altus,Altus,Elektronik,Beyaz Eşya & Ev Aletleri | Ev & Yaşam,43,1,0,Datadaki marka kolonundan otomatik üretildi
+S0018,Marka Mağazası,Electrolux,Electrolux,Elektronik,Beyaz Eşya & Ev Aletleri | Ev & Yaşam,39,1,0,Datadaki marka kolonundan otomatik üretildi
+S0017,Marka Mağazası,Dyson,Dyson,Elektronik,Ev & Yaşam | Kişisel Bakım | Saç Bakım Cihazları,38,1,0,Datadaki marka kolonundan otomatik üretildi
+S0037,Marka Mağazası,Remington,Remington,Elektronik,Kişisel Bakım | Saç Bakım Cihazları | Tıraş & Epilasyon,38,1,0,Datadaki marka kolonundan otomatik üretildi
+S0047,Marka Mağazası,Xiaomi,Xiaomi,Elektronik,Ev & Yaşam | Saç Bakım Cihazları | Telefon,29,1,0,Datadaki marka kolonundan otomatik üretildi
+S0045,Marka Mağazası,Tefal,Tefal,Elektronik,Ev & Yaşam,27,1,0,Datadaki marka kolonundan otomatik üretildi
+S0032,Marka Mağazası,Oral-B,Oral-B,Elektronik,Ağız & Diş Bakımı | Kişisel Bakım,24,1,0,Datadaki marka kolonundan otomatik üretildi
+S0006,Marka Mağazası,Arzum,Arzum,Elektronik,Ev & Yaşam | Kişisel Bakım | Saç Bakım Cihazları,23,1,0,Datadaki marka kolonundan otomatik üretildi
+S0016,Marka Mağazası,Dreame,Dreame,Elektronik,Ev & Yaşam | Saç Bakım Cihazları,20,1,0,Datadaki marka kolonundan otomatik üretildi
+S0038,Marka Mağazası,Roborock,Roborock,Elektronik,Ev & Yaşam,18,1,0,Datadaki marka kolonundan otomatik üretildi
+S0019,Marka Mağazası,Fakir,Fakir,Elektronik,Ev & Yaşam,15,1,0,Datadaki marka kolonundan otomatik üretildi
+S0028,Marka Mağazası,LG,LG,Elektronik,Beyaz Eşya & Ev Aletleri,15,1,0,Datadaki marka kolonundan otomatik üretildi
+S0005,Marka Mağazası,Arnica,Arnica,Elektronik,Ev & Yaşam,12,1,0,Datadaki marka kolonundan otomatik üretildi
+S0024,Marka Mağazası,Karcher,Karcher,Elektronik,Ev & Yaşam,10,1,0,Datadaki marka kolonundan otomatik üretildi
+S0021,Marka Mağazası,Hoover,Hoover,Elektronik,Beyaz Eşya & Ev Aletleri,9,1,0,Datadaki marka kolonundan otomatik üretildi
+S0009,Marka Mağazası,Beko,Beko,Elektronik,Beyaz Eşya & Ev Aletleri | Ev & Yaşam,8,1,0,Datadaki marka kolonundan otomatik üretildi
+S0022,Marka Mağazası,HP,HP,Elektronik,Bilgisayar & Tablet,8,1,0,Datadaki marka kolonundan otomatik üretildi
+S0030,Marka Mağazası,MSI,MSI,Elektronik,Bilgisayar & Tablet,8,1,0,Datadaki marka kolonundan otomatik üretildi
+S0035,Marka Mağazası,Profilo,Profilo,Elektronik,Beyaz Eşya & Ev Aletleri,8,1,0,Datadaki marka kolonundan otomatik üretildi
+S0041,Marka Mağazası,Siemens,Siemens,Elektronik,Beyaz Eşya & Ev Aletleri | Ev & Yaşam,7,1,0,Datadaki marka kolonundan otomatik üretildi
+S0008,Marka Mağazası,Baymak,Baymak,Elektronik,Ev & Yaşam,6,1,0,Datadaki marka kolonundan otomatik üretildi
+S0033,Marka Mağazası,Petkit,Petkit,Elektronik,Ev & Yaşam,6,1,0,Datadaki marka kolonundan otomatik üretildi
+S0044,Marka Mağazası,Tecno,Tecno,Elektronik,Telefon,6,1,0,Datadaki marka kolonundan otomatik üretildi
+S0031,Marka Mağazası,Nespresso,Nespresso,Elektronik,Ev & Yaşam,5,1,0,Datadaki marka kolonundan otomatik üretildi
+S0015,Marka Mağazası,DeLonghi,DeLonghi,Elektronik,Ev & Yaşam,4,1,0,Datadaki marka kolonundan otomatik üretildi
+S0026,Marka Mağazası,Lava,Lava,Elektronik,Ev & Yaşam,4,1,0,Datadaki marka kolonundan otomatik üretildi
+S0036,Marka Mağazası,Rampage,Rampage,Elektronik,Bilgisayar & Tablet,4,1,0,Datadaki marka kolonundan otomatik üretildi
+S0040,Marka Mağazası,Shark,Shark,Elektronik,Ev & Yaşam,4,1,0,Datadaki marka kolonundan otomatik üretildi
+S0042,Marka Mağazası,Sinbo,Sinbo,Elektronik,Ev & Yaşam,4,1,0,Datadaki marka kolonundan otomatik üretildi
+S0012,Marka Mağazası,Casper,Casper,Elektronik,Bilgisayar & Tablet,3,1,0,Datadaki marka kolonundan otomatik üretildi
+S0014,Marka Mağazası,Dell,Dell,Elektronik,Bilgisayar & Tablet,3,1,0,Datadaki marka kolonundan otomatik üretildi
+S0025,Marka Mağazası,Korkmaz,Korkmaz,Elektronik,Ev & Yaşam,3,1,0,Datadaki marka kolonundan otomatik üretildi
+S0046,Marka Mağazası,Vivo,Vivo,Elektronik,Telefon,3,1,0,Datadaki marka kolonundan otomatik üretildi
+S0023,Marka Mağazası,Karaca,Karaca,Elektronik,Ev & Yaşam,2,1,0,Datadaki marka kolonundan otomatik üretildi
+S0001,Marka Mağazası,Acer,Acer,Elektronik,Bilgisayar & Tablet,1,1,0,Datadaki marka kolonundan otomatik üretildi
+S0013,Marka Mağazası,Daikin,Daikin,Elektronik,Ev & Yaşam,1,1,0,Datadaki marka kolonundan otomatik üretildi
+S0029,Marka Mağazası,Miele,Miele,Elektronik,Ev & Yaşam,1,1,0,Datadaki marka kolonundan otomatik üretildi
+S0043,Marka Mağazası,Tchibo,Tchibo,Elektronik,Ev & Yaşam,1,1,0,Datadaki marka kolonundan otomatik üretildi

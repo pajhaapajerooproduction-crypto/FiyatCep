@@ -1,0 +1,8 @@
+﻿shopping_id,research_id,product_id,urun,source_name,source_type,birim,fiyat,tasarruf,durum,tarih,saat
+PLAN_20260427235036_f2a8e,AR_20260427234729_58386,P00129,Armut Deveci,Migros,Gıda Marketi,Kg,145.0,35.0,alındı,2026-04-27,23:50:36
+PLAN_20260427235036_f2a8e,AR_20260427234729_58386,P00144,Erik Malta,Migros,Gıda Marketi,Kg,90.0,60.0,alındı,2026-04-27,23:50:36
+PLAN_20260427235036_f2a8e,AR_20260427234729_58386,P00145,Greyfurt,Migros,Gıda Marketi,Kg,140.0,20.0,alındı,2026-04-27,23:50:36
+PLAN_20260427235036_f2a8e,AR_20260427234729_58386,P00115,Mango,pazar,Pazar,Adet,155.0,15.0,alındı,2026-04-27,23:50:36
+PLAN_20260427235617_e23d4,AR_20260427235329_d7190,P00477,Apple iPhone 15 128 GB MTP13TU/A Apple iPhone 15 128 GB MTP13TU/A,MediaMarkt,Elektronik Marketi,Adet,12000.0,0.0,bekliyor,2026-04-27,23:56:17
+PLAN_20260427235617_e23d4,AR_20260427235329_d7190,P00407,Apple Mac mini: Apple M4 Çip 10 Çekirdekli CPU 10 Çekirdekli GPU SSD MU9D3TU A Apple Mac mini: Apple M4 Çip 10 Çekirdekli CPU 10 Çekirdekli GPU SSD MU9D3TU A,MediaMarkt,Elektronik Marketi,Adet,15000.0,0.0,sonra,2026-04-27,23:56:17
+PLAN_20260428003727_36727,AR_20260428000835_e0687,P00517,Samsung Galaxy A17 5G 8/256GB Samsung Galaxy A17 5G 8/256GB,Amazon,Amazon,Adet,13759.0,26240.0,alındı,2026-04-28,00:37:27

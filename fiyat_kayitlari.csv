@@ -1,0 +1,4 @@
+﻿Tarih,Saat,product_id,Sektor,Isletme,Kategori,AltKategori,UrunTuru,UrunMarka,Model,UrunAdi,Birim,Fiyat,KaynakMagaza,Varyant
+2026-04-25,21:20:30,P00001,Gıda,Bim,Et-Tavuk-Balık,Balık,Balık,,,Levrek,Adet,500.0,,
+2026-04-25,22:07:21,P00021,Gıda,,Et-Tavuk-Balık,Kuzu Eti,Kuzu Eti,,,Kuzu Pirzola,Kg,550000.0,Şok,
+2026-04-25,22:07:31,P00019,Gıda,,Et-Tavuk-Balık,Kuzu Eti,Kuzu Eti,,,Kuzu Döş,Kg,300.0,Şok,
