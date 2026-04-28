@@ -16,6 +16,12 @@ try:
 except Exception:
     HAS_MAP = False
 
+try:
+    from streamlit_geolocation import streamlit_geolocation
+    HAS_GEOLOCATION = True
+except Exception:
+    HAS_GEOLOCATION = False
+
 
 # =========================================================
 # FİYATCEP - ADİSYON/FİŞ MANTIĞI V1
@@ -2526,20 +2532,146 @@ def render_receipt_panel():
 # 10. EKRANLAR
 # =========================================================
 
+def get_current_location_center():
+    lat = parse_price(str(st.session_state.get("location_lat", "")))
+    lon = parse_price(str(st.session_state.get("location_lon", "")))
+
+    if lat is None or lon is None:
+        # İstanbul varsayılan test merkezi
+        return 41.0082, 28.9784, 12
+
+    return lat, lon, 16
+
+
+def apply_detected_location(location):
+    """
+    streamlit-geolocation sonucu:
+    {'latitude': ..., 'longitude': ..., 'accuracy': ...}
+    veya ilk açılışta "No Location Info" benzeri string olabilir.
+    """
+    if not isinstance(location, dict):
+        return False
+
+    lat = location.get("latitude")
+    lon = location.get("longitude")
+
+    if lat is None:
+        lat = location.get("lat")
+
+    if lon is None:
+        lon = location.get("lng") or location.get("lon")
+
+    try:
+        lat = float(lat)
+        lon = float(lon)
+    except Exception:
+        return False
+
+    st.session_state.location_lat = str(round(lat, 7))
+    st.session_state.location_lon = str(round(lon, 7))
+    st.session_state.location_accuracy = clean_cell(location.get("accuracy", ""))
+    st.session_state.location_source = "GPS"
+    return True
+
+
+
 def render_location_screen():
-    st.subheader("Konum")
+    st.subheader("📍 Konum Doğrulama")
+
+    st.caption(
+        "Telefonda ilk kullanımda tarayıcı konum izni ister. İzin çıkmazsa adres çubuğundaki kilit simgesinden konum iznini aç."
+    )
+
+    if HAS_GEOLOCATION:
+        st.markdown("#### 1. GPS ile konum al")
+        location = streamlit_geolocation()
+
+        if apply_detected_location(location):
+            st.success(
+                f"GPS konumu alındı: {st.session_state.location_lat}, {st.session_state.location_lon}"
+            )
+        else:
+            st.info("Konum izni verdikten sonra birkaç saniye bekle. Gerekirse sayfayı yenile veya butona tekrar bas.")
+    else:
+        st.warning("GPS konum paketi kurulu değil: streamlit-geolocation")
+
+    lat, lon, zoom = get_current_location_center()
+
+    st.markdown("#### 2. Haritada kontrol et")
 
     if HAS_MAP:
-        m = folium.Map(location=[41.0082, 28.9784], zoom_start=12)
-        st_folium(m, height=240, width=700)
+        m = folium.Map(location=[lat, lon], zoom_start=zoom)
+        folium.Marker(
+            [lat, lon],
+            tooltip="Seçili konum",
+            popup="Fiş konumu"
+        ).add_to(m)
+        folium.Circle(
+            radius=30,
+            location=[lat, lon],
+            color="#2563eb",
+            fill=True,
+            fill_opacity=0.15,
+        ).add_to(m)
+
+        map_data = st_folium(m, height=280, width=700)
+
+        # Haritaya tıklanırsa manuel düzeltme olarak kabul et.
+        if isinstance(map_data, dict) and map_data.get("last_clicked"):
+            clicked = map_data.get("last_clicked", {})
+            try:
+                st.session_state.location_lat = str(round(float(clicked.get("lat")), 7))
+                st.session_state.location_lon = str(round(float(clicked.get("lng")), 7))
+                st.session_state.location_source = "Harita"
+                st.info("Haritadan seçilen konum alındı. Konumu onaylayabilirsin.")
+            except Exception:
+                pass
     else:
         st.info("Harita paketi kurulu değil. Konum alanı test modunda çalışıyor.")
 
-    st.caption("Bu ekranda şimdilik konum onayı alınıyor. Gerçek GPS entegrasyonu ayrıca eklenebilir.")
+    st.markdown("#### 3. Konumu onayla")
+
+    c1, c2 = st.columns(2)
+
+    c1.metric("Enlem", clean_cell(st.session_state.get("location_lat", "")) or "Bekleniyor")
+    c2.metric("Boylam", clean_cell(st.session_state.get("location_lon", "")) or "Bekleniyor")
+
+    accuracy = clean_cell(st.session_state.get("location_accuracy", ""))
+
+    if accuracy:
+        st.caption(f"GPS doğruluk payı: yaklaşık {accuracy} metre")
+
+    with st.expander("Manuel koordinat gir / düzelt"):
+        manual_lat = st.text_input(
+            "Enlem",
+            value=clean_cell(st.session_state.get("location_lat", "")),
+            key="manual_location_lat",
+            placeholder="41.0082"
+        )
+        manual_lon = st.text_input(
+            "Boylam",
+            value=clean_cell(st.session_state.get("location_lon", "")),
+            key="manual_location_lon",
+            placeholder="28.9784"
+        )
+
+        if st.button("Manuel koordinatı kullan", use_container_width=True):
+            try:
+                lat_value = float(str(manual_lat).replace(",", "."))
+                lon_value = float(str(manual_lon).replace(",", "."))
+                st.session_state.location_lat = str(round(lat_value, 7))
+                st.session_state.location_lon = str(round(lon_value, 7))
+                st.session_state.location_source = "Manuel"
+                st.success("Manuel konum kaydedildi. Şimdi konumu onaylayabilirsin.")
+                st.rerun()
+            except Exception:
+                st.error("Enlem/boylam değeri geçersiz.")
 
     button_label = "Konumu Güncelle" if st.session_state.get("needs_location_update", False) else "Konumu Onayla ve Başla"
 
-    if st.button(button_label, use_container_width=True, type="primary"):
+    has_coords = bool(clean_cell(st.session_state.get("location_lat", ""))) and bool(clean_cell(st.session_state.get("location_lon", "")))
+
+    if st.button(button_label, use_container_width=True, type="primary", disabled=not has_coords):
         st.session_state.location_confirmed = True
         st.session_state.needs_location_update = False
 
@@ -2549,6 +2681,9 @@ def render_location_screen():
             st.session_state.step = "research_start"
 
         st.rerun()
+
+    if not has_coords:
+        st.caption("Konumu onaylamak için GPS izni ver, haritaya tıkla veya manuel koordinat gir.")
 
 
 
