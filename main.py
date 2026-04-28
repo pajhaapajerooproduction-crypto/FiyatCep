@@ -2224,14 +2224,7 @@ else:
 if st.session_state.last_save_status:
     st.success(st.session_state.last_save_status)
 
-# Konum akışı artık kilit ekranı değil; arka planda denenir.
-render_background_location_bar()
-
-if not st.session_state.get("location_confirmed", False):
-    if st.button("📍 Konum ekranını aç", use_container_width=True, key="open_location_screen_top"):
-        st.session_state.step = "location"
-        st.rerun()
-
+# Konum durumu, tüm fonksiyonlar tanımlandıktan sonra router öncesinde gösterilir.
 
 # =========================================================
 # 9. FİŞ PANELİ
@@ -5798,6 +5791,14 @@ def render_fixed_bottom_nav():
 # =========================================================
 # 11. ANA ROUTER
 # =========================================================
+
+if st.session_state.step != "location":
+    render_background_location_bar()
+
+    if not st.session_state.get("location_confirmed", False):
+        if st.button("📍 Konum ekranını aç", use_container_width=True, key="open_location_screen_top"):
+            st.session_state.step = "location"
+            st.rerun()
 
 if products_df.empty:
     st.error("products_master_clean.csv bulunamadı veya boş.")
