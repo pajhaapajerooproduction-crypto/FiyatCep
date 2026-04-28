@@ -2181,31 +2181,47 @@ h2, h3 {
 
 /* Mobilde Streamlit kolonları alt alta atmasın; ürün/kaynak/konum kutuları yan yana kalsın. */
 div[data-testid="stHorizontalBlock"] {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
     gap: 0.35rem !important;
     align-items: stretch !important;
+    width: 100% !important;
 }
 
 div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-    flex: 1 1 0 !important;
+    flex: 1 1 0px !important;
     min-width: 0 !important;
-    width: auto !important;
+    width: 0 !important;
+    max-width: none !important;
 }
 
 @media (max-width: 768px) {
     div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
         flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 0.28rem !important;
+        width: 100% !important;
     }
 
     div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-        flex: 1 1 0 !important;
+        flex: 1 1 0px !important;
         min-width: 0 !important;
-        width: auto !important;
+        width: 0 !important;
+        max-width: none !important;
     }
 
     .stButton>button {
-        min-height: 58px;
-        font-size: 12px;
-        padding: 0.28rem 0.25rem;
+        min-height: 112px;
+        font-size: 11.5px;
+        padding: 0.3rem 0.18rem;
+    }
+
+    .fixed-bottom-nav .stButton>button {
+        min-height: 42px !important;
+        font-size: 11px !important;
+        padding: 0.2rem 0.15rem !important;
     }
 }
 
@@ -2657,14 +2673,14 @@ def render_receipt_panel():
                             border:1px solid #cbd5e1;
                             border-radius:14px;
                             padding:8px;
-                            min-height:136px;
+                            min-height:150px;
                             background:#ffffff;
                             margin-bottom:6px;
                         ">
                             {icon_html}
-                            <div style="font-weight:900; font-size:13px; line-height:1.18; color:#0f172a;">{i + 1}. {item['title']}</div>
-                            <div style="font-size:10px; color:#64748b; margin-top:5px;">{item['birim']} • {item['path']}</div>
-                            <div style="font-size:15px; color:{price_color}; font-weight:900; margin-top:8px;">{price_text}</div>
+                            <div style="font-weight:900; font-size:12px; line-height:1.12; color:#0f172a;">{i + 1}. {item['title']}</div>
+                            <div style="font-size:9px; color:#64748b; margin-top:4px;">{item['birim']} • {item['path']}</div>
+                            <div style="font-size:14px; color:{price_color}; font-weight:900; margin-top:8px;">{price_text}</div>
                         </div>
                         """,
                         unsafe_allow_html=True
@@ -3183,7 +3199,7 @@ def render_add_products_to_user_list_grid(df, list_id, key_prefix="user_list_gri
                 product_id = clean_cell(row.get("product_id", ""))
                 title = format_product_title(row)
                 emoji = get_product_icon_emoji(product_id, title) if "get_product_icon_emoji" in globals() else ""
-                label = f"{emoji}\\n{title}\\n+ Listeye"
+                label = f"{emoji}\\n{title}\\nEkle"
 
                 if st.button(
                     label,
@@ -4155,7 +4171,7 @@ def render_product_list(df):
                 emoji = get_product_icon_emoji(product_id, title) if "get_product_icon_emoji" in globals() else ""
 
                 # Kartın kendisi buton: emoji / ürün adı / ekle satır satır görünür.
-                product_label = f"{emoji}\n{title}\n+ Ekle".strip()
+                product_label = f"{emoji}\n{title}\nEkle".strip()
 
                 if st.button(
                     product_label,
