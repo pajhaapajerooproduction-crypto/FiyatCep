@@ -3772,101 +3772,100 @@ def product_select_label(row):
 def render_compact_category_product_picker(prefix, target="receipt", list_id="", title="Ürün seç"):
     """
     Normal mobil akış:
-    Dev buton ağacı yerine kategori dropdown + ürün dropdown.
-    Arka taraftaki ürün ağacı durur, kullanıcı sadece gerekli filtreleri görür.
+    Kategori seçimi yine butonlu ilerler.
+    Ama eski uzun satır butonları yerine kompakt grid/kutu düzeni kullanılır.
     """
     st.markdown(f"#### {title}")
 
-    # Kategori seçimi: uzun butonlar yerine kısa selectbox'lar.
+    selected_parts = []
+
+    for i in range(1, 6):
+        value = clean_cell(st.session_state.get(f"{prefix}_level_{i}", ""))
+
+        if value:
+            selected_parts.append(value)
+
+    if selected_parts:
+        st.caption(" > ".join(selected_parts))
+
+        nav1, nav2 = st.columns(2)
+
+        if nav1.button("⬅️ Bir Üst", use_container_width=True, key=safe_key("compact_up", prefix)):
+            deepest = 0
+            for i in range(1, 6):
+                if clean_cell(st.session_state.get(f"{prefix}_level_{i}", "")):
+                    deepest = i
+
+            if deepest <= 1:
+                reset_compact_picker(prefix, 1)
+            else:
+                reset_compact_picker(prefix, deepest)
+
+            st.rerun()
+
+        if nav2.button("🏠 Başa Dön", use_container_width=True, key=safe_key("compact_reset", prefix)):
+            reset_compact_picker(prefix, 1)
+            st.rerun()
+
+    # Sıradaki seçilecek kategori seviyesi.
+    next_level = None
+    level_col = None
+    options = []
+
     for level_no, col in enumerate(LEVEL_COLS, start=1):
-        options = get_level_options_for_compact_picker(prefix, level_no)
-        key = f"{prefix}_level_{level_no}"
+        selected = clean_cell(st.session_state.get(f"{prefix}_level_{level_no}", ""))
 
-        # Daha önce seçilen değer yeni seçeneklerde yoksa widget oluşmadan temizle.
-        current = clean_cell(st.session_state.get(key, ""))
-
-        if current and current not in options:
-            st.session_state[key] = ""
-            reset_compact_picker(prefix, level_no + 1)
-            current = ""
-
-        # Alt seviyede seçenek yoksa daha fazla selectbox göstermeye gerek yok.
-        if not options:
+        if not selected:
+            next_level = level_no
+            level_col = col
+            options = get_level_options_for_compact_picker(prefix, level_no)
             break
 
-        label = [
-            "Ana kategori",
-            "Alt kategori",
-            "Bölüm",
-            "Marka / Tür",
-            "Detay",
-        ][level_no - 1]
+    filtered = get_compact_picker_df(prefix).copy()
 
-        select_options = [""] + options
-        index = select_options.index(current) if current in select_options else 0
+    if level_col and options:
+        st.markdown("##### Kategori seç")
 
-        def _reset_deeper(prefix=prefix, from_level=level_no + 1):
-            reset_compact_picker(prefix, from_level)
+        # Mobilde uzun satır değil: kompakt 3'lü buton grid.
+        # Çok kısa listelerde 2 sütun daha rahat durur.
+        cols_per_row = 2 if len(options) <= 4 else 3
 
-        st.selectbox(
-            label,
-            select_options,
-            index=index,
-            key=key,
-            format_func=lambda x: "Seç" if x == "" else x,
-            on_change=_reset_deeper,
-        )
+        for start_idx in range(0, len(options), cols_per_row):
+            chunk = options[start_idx:start_idx + cols_per_row]
+            cols = st.columns(cols_per_row)
 
-        # Bir seviye boşsa daha alt seviyeleri göstermeyelim.
-        if not clean_cell(st.session_state.get(key, "")):
-            break
+            for col_idx, option in enumerate(chunk):
+                count = len(filtered[filtered[level_col] == option])
+                label = f"{option}\n{count} ürün"
 
-    filtered = get_compact_picker_df(prefix)
-    filtered = filtered.copy()
+                if cols[col_idx].button(
+                    label,
+                    key=safe_key("compact_level_button", prefix, next_level, option, start_idx + col_idx),
+                    use_container_width=True,
+                ):
+                    st.session_state[f"{prefix}_level_{next_level}"] = option
+                    reset_compact_picker(prefix, next_level + 1)
+                    st.rerun()
 
-    if filtered.empty:
-        st.warning("Bu seçimde ürün yok.")
-        return
+    product_count = len(filtered)
 
-    filtered["_name_order"] = filtered["urun_adi"].apply(normalize_for_search)
-    filtered = filtered.sort_values("_name_order")
-
-    st.caption(f"Uygun ürün: {len(filtered)}")
-
-    if len(filtered) > 300:
-        st.info("Çok fazla ürün var. Bir kategori daha seç veya arama sekmesini kullan.")
-        return
-
-    product_ids = filtered["product_id"].astype(str).tolist()
-    row_map = {clean_cell(row["product_id"]): row for _, row in filtered.iterrows()}
-
-    if not product_ids:
-        return
-
-    selected_pid = st.selectbox(
-        "Ürün",
-        product_ids,
-        key=f"{prefix}_selected_product",
-        format_func=lambda pid: product_select_label(row_map.get(clean_cell(pid), {})),
+    # Çok geniş ürün havuzunu basmayalım, kategori butonlarıyla daraltalım.
+    show_products = (
+        product_count <= 60 or
+        next_level is None or
+        all(clean_cell(st.session_state.get(f"{prefix}_level_{i}", "")) for i in range(1, 6))
     )
 
-    selected_row = row_map.get(clean_cell(selected_pid))
+    if show_products:
+        st.markdown("##### Ürünler")
 
-    if selected_row is None:
-        return
-
-    if target == "receipt":
-        button_label = "🛒 Fişe Ekle"
-    else:
-        button_label = "➕ Listeye Ekle"
-
-    if st.button(button_label, use_container_width=True, type="primary", key=safe_key("compact_add", prefix, target, selected_pid)):
         if target == "receipt":
-            add_to_receipt(selected_row)
+            render_product_list(filtered)
         else:
-            add_product_to_user_list(list_id, selected_row)
+            render_add_products_to_user_list_grid(filtered, list_id, key_prefix=safe_key("compact_list_products", prefix))
+    else:
+        st.info(f"{product_count} ürün var. Kategori butonlarıyla biraz daha daralt.")
 
-        st.rerun()
 
 
 def render_compact_search_product_picker(prefix, target="receipt", list_id="", title="Arayarak ekle"):
@@ -3880,43 +3879,22 @@ def render_compact_search_product_picker(prefix, target="receipt", list_id="", t
     )
 
     if not clean_cell(query):
-        st.caption("Arama yapabilir veya kategori seçimiyle ilerleyebilirsin.")
+        st.caption("Ürün adı yaz; çıkan sonuçlardan butona basarak ekle.")
         return
 
-    results = search_products(query, limit=60)
+    results = search_products(query, limit=36)
 
     if results.empty:
         st.warning("Ürün bulunamadı.")
         return
 
-    results = results.copy()
-    results["_name_order"] = results["urun_adi"].apply(normalize_for_search)
-    results = results.sort_values("_name_order")
+    st.caption(f"Bulunan sonuç: {len(results)}")
 
-    product_ids = results["product_id"].astype(str).tolist()
-    row_map = {clean_cell(row["product_id"]): row for _, row in results.iterrows()}
+    if target == "receipt":
+        render_product_list(results)
+    else:
+        render_add_products_to_user_list_grid(results, list_id, key_prefix=safe_key("compact_search_list_products", prefix))
 
-    selected_pid = st.selectbox(
-        "Arama sonucu",
-        product_ids,
-        key=f"{prefix}_search_selected_product",
-        format_func=lambda pid: product_select_label(row_map.get(clean_cell(pid), {})),
-    )
-
-    selected_row = row_map.get(clean_cell(selected_pid))
-
-    if selected_row is None:
-        return
-
-    button_label = "🛒 Fişe Ekle" if target == "receipt" else "➕ Listeye Ekle"
-
-    if st.button(button_label, use_container_width=True, type="primary", key=safe_key("compact_search_add", prefix, target, selected_pid)):
-        if target == "receipt":
-            add_to_receipt(selected_row)
-        else:
-            add_product_to_user_list(list_id, selected_row)
-
-        st.rerun()
 
 
 def render_normal_product_add_panel(target="receipt", list_id=""):
@@ -3928,9 +3906,9 @@ def render_normal_product_add_panel(target="receipt", list_id=""):
         title = "Listeye ürün ekle"
 
     st.markdown(f"### {title}")
-    st.markdown('<div class="compact-note">Kategori ağacı arkada çalışıyor; ekranda sadece seçim kutuları var. Böylece mobilde sayfa uzamaz.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="compact-note">Kategori ağacı arkada çalışıyor; ekranda kompakt butonlarla ilerlersin. Uzun liste yok.</div>', unsafe_allow_html=True)
 
-    tab_cat, tab_search = st.tabs(["Kategoriyle seç", "Arayarak ekle"])
+    tab_cat, tab_search = st.tabs(["Butonla seç", "Arayarak ekle"])
 
     with tab_cat:
         render_compact_category_product_picker(prefix, target=target, list_id=list_id, title="Kategoriyle seç")
