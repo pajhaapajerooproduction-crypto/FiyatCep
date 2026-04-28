@@ -1310,7 +1310,7 @@ def reset_tree(from_level=1):
     for i in range(from_level, 6):
         st.session_state[f"level_{i}"] = ""
 
-    st.session_state.product_list_limit = 12
+    st.session_state.product_list_limit = 8
 
 
 def get_deepest_selected_level():
@@ -2231,9 +2231,9 @@ h2, h3 {
 /* Güvenli native buton/kutu görünümü. HTML grid yok, global kolon zorlama yok. */
 @media (max-width: 768px) {
     .stButton>button {
-        min-height: 96px;
-        font-size: 12px;
-        padding: 0.35rem 0.25rem;
+        min-height: 64px;
+        font-size: 11.5px;
+        padding: 0.22rem 0.18rem;
     }
 
     .fixed-bottom-nav .stButton>button {
@@ -2308,8 +2308,8 @@ def init_state():
         "route_excluded_products": [],
         "route_excluded_sources": [],
 
-        "product_list_limit": 12,
-        "user_list_product_limit": 12,
+        "product_list_limit": 8,
+        "user_list_product_limit": 8,
         "search_query": "",
         "search_limit": 8,
         "clear_search_query_next_run": False,
@@ -2691,14 +2691,14 @@ def render_receipt_panel():
                             border:1px solid #cbd5e1;
                             border-radius:14px;
                             padding:8px;
-                            min-height:168px;
+                            min-height:118px;
                             background:#ffffff;
                             margin-bottom:6px;
                         ">
                             {icon_html}
                             <div style="font-weight:900; font-size:12px; line-height:1.12; color:#0f172a;">{i + 1}. {item['title']}</div>
                             <div style="font-size:9px; color:#64748b; margin-top:4px;">{item['birim']} • {item['path']}</div>
-                            <div style="font-size:14px; color:{price_color}; font-weight:900; margin-top:8px;">{price_text}</div>
+                            <div style="font-size:13px; color:{price_color}; font-weight:900; margin-top:8px;">{price_text}</div>
                         </div>
                         """,
                         unsafe_allow_html=True
@@ -3123,7 +3123,7 @@ def reset_user_list_tree(from_level=1):
     for i in range(from_level, 6):
         st.session_state[f"user_list_level_{i}"] = ""
 
-    st.session_state.user_list_product_limit = 12
+    st.session_state.user_list_product_limit = 8
 
 
 def get_deepest_user_list_level():
@@ -3189,7 +3189,7 @@ def user_list_product_order_score(row):
 
 def render_add_products_to_user_list_grid(df, list_id, key_prefix="user_list_grid"):
     if "user_list_product_limit" not in st.session_state:
-        st.session_state.user_list_product_limit = 12
+        st.session_state.user_list_product_limit = 8
 
     if df.empty:
         st.warning("Bu seçimde ürün yok.")
@@ -3218,7 +3218,7 @@ def render_add_products_to_user_list_grid(df, list_id, key_prefix="user_list_gri
                 title = format_product_title(row)
                 emoji = get_product_icon_emoji(product_id, title) if "get_product_icon_emoji" in globals() else ""
                 birim = clean_cell(row.get("birim", "")) or "Adet"
-                label = f"{emoji}\n{title}\n{birim} • Ekle"
+                label = f"{emoji}\n{title}\nEkle"
 
                 if st.button(
                     label,
@@ -3230,7 +3230,7 @@ def render_add_products_to_user_list_grid(df, list_id, key_prefix="user_list_gri
 
     if len(df) > limit:
         if st.button("➕ Daha fazla ürün göster", use_container_width=True, key=safe_key(key_prefix, list_id, "more")):
-            st.session_state.user_list_product_limit = min(limit + 16, 120)
+            st.session_state.user_list_product_limit = min(limit + 8, 120)
             st.rerun()
 
 
@@ -4208,7 +4208,7 @@ def render_compact_category_product_picker(prefix, target="receipt", list_id="",
     if level_col and options:
         st.markdown("##### Kategori seç")
 
-        cols_per_row = 2
+        cols_per_row = 3
 
         for start_idx in range(0, len(options), cols_per_row):
             chunk = options[start_idx:start_idx + cols_per_row]
@@ -4216,7 +4216,7 @@ def render_compact_category_product_picker(prefix, target="receipt", list_id="",
 
             for col_idx, option in enumerate(chunk):
                 count = len(filtered[filtered[level_col] == option])
-                label = f"▦\n{option}\n{count} ürün"
+                label = f"{option}\n{count}"
 
                 if cols[col_idx].button(
                     label,
@@ -4347,7 +4347,7 @@ def handle_add_product_query(df):
 
 def render_product_list(df):
     if "product_list_limit" not in st.session_state:
-        st.session_state.product_list_limit = 12
+        st.session_state.product_list_limit = 8
 
     if df.empty:
         st.warning("Bu seçimde ürün yok.")
@@ -4377,7 +4377,7 @@ def render_product_list(df):
                 emoji = get_product_icon_emoji(product_id, title) if "get_product_icon_emoji" in globals() else ""
                 birim = clean_cell(row.get("birim", "")) or "Adet"
 
-                product_label = f"{emoji}\n{title}\n{birim} • Ekle".strip()
+                product_label = f"{emoji}\n{title}\nEkle".strip()
 
                 if st.button(
                     product_label,
@@ -4389,7 +4389,7 @@ def render_product_list(df):
 
     if len(df) > limit:
         if st.button("➕ Daha fazla ürün göster", use_container_width=True):
-            st.session_state.product_list_limit = min(limit + 16, 96)
+            st.session_state.product_list_limit = min(limit + 8, 96)
             st.rerun()
 
 
