@@ -8,6 +8,7 @@ from datetime import datetime
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 try:
     import folium
@@ -66,6 +67,7 @@ DATA_PACKAGE_ZIP = "FiyatCep_Data_Paketi_v9.zip"
 ICON_MAP_FILE = "icon_map_openmoji.csv"
 ICON_RULES_FILE = "icon_rules.csv"
 ICON_DIR = os.path.join("icons", "openmoji")
+LOCATION_MAX_ACCURACY_METERS = 200
 
 RECEIPT_HEADER_COLUMNS = [
     "receipt_id",
@@ -2537,153 +2539,218 @@ def get_current_location_center():
     lon = parse_price(str(st.session_state.get("location_lon", "")))
 
     if lat is None or lon is None:
-        # İstanbul varsayılan test merkezi
         return 41.0082, 28.9784, 12
 
     return lat, lon, 16
 
 
-def apply_detected_location(location):
-    """
-    streamlit-geolocation sonucu:
-    {'latitude': ..., 'longitude': ..., 'accuracy': ...}
-    veya ilk açılışta "No Location Info" benzeri string olabilir.
-    """
-    if not isinstance(location, dict):
+def get_query_param_value(name):
+    try:
+        value = st.query_params.get(name, "")
+    except Exception:
+        return ""
+
+    if isinstance(value, list):
+        return value[0] if value else ""
+
+    return clean_cell(value)
+
+
+def clear_gps_query_params():
+    try:
+        for key in ["gps_lat", "gps_lon", "gps_acc", "gps_ts"]:
+            if key in st.query_params:
+                del st.query_params[key]
+    except Exception:
+        try:
+            st.query_params.clear()
+        except Exception:
+            pass
+
+
+def read_gps_query_result():
+    lat_text = get_query_param_value("gps_lat")
+    lon_text = get_query_param_value("gps_lon")
+    acc_text = get_query_param_value("gps_acc")
+
+    if not lat_text or not lon_text:
         return False
-
-    lat = location.get("latitude")
-    lon = location.get("longitude")
-
-    if lat is None:
-        lat = location.get("lat")
-
-    if lon is None:
-        lon = location.get("lng") or location.get("lon")
 
     try:
-        lat = float(lat)
-        lon = float(lon)
+        lat = float(str(lat_text).replace(",", "."))
+        lon = float(str(lon_text).replace(",", "."))
     except Exception:
-        return False
+        st.session_state.location_error = "Konum bilgisi okunamadı. Tekrar dene."
+        clear_gps_query_params()
+        st.rerun()
+
+    try:
+        accuracy = float(str(acc_text).replace(",", ".")) if acc_text else None
+    except Exception:
+        accuracy = None
 
     st.session_state.location_lat = str(round(lat, 7))
     st.session_state.location_lon = str(round(lon, 7))
-    st.session_state.location_accuracy = clean_cell(location.get("accuracy", ""))
+    st.session_state.location_accuracy = "" if accuracy is None else str(round(accuracy, 1))
     st.session_state.location_source = "GPS"
-    return True
 
+    if accuracy is not None and accuracy > LOCATION_MAX_ACCURACY_METERS:
+        st.session_state.location_confirmed = False
+        st.session_state.location_error = (
+            f"Konum çok yaklaşık geldi: {round(accuracy)} m. "
+            f"Daha doğru sonuç için tekrar Konumu Doğrula."
+        )
+        clear_gps_query_params()
+        st.rerun()
+
+    st.session_state.location_confirmed = True
+    st.session_state.needs_location_update = False
+    st.session_state.location_error = ""
+
+    clear_gps_query_params()
+
+    if st.session_state.get("research_active", False):
+        st.session_state.step = "product_tree"
+    else:
+        st.session_state.step = "research_start"
+
+    st.rerun()
+
+
+def render_gps_button():
+    components.html(
+        """
+        <div style="width:100%; padding:0; margin:0;">
+            <button id="gpsBtn" style="
+                width:100%;
+                min-height:58px;
+                border:0;
+                border-radius:14px;
+                background:#16a34a;
+                color:white;
+                font-size:18px;
+                font-weight:900;
+                cursor:pointer;
+                box-shadow:0 2px 8px rgba(22,163,74,.22);
+            ">📍 Konumu Doğrula</button>
+            <div id="gpsMsg" style="
+                margin-top:8px;
+                font-size:13px;
+                color:#475569;
+                line-height:1.25;
+                font-family:Arial, sans-serif;
+            "></div>
+        </div>
+
+        <script>
+        const btn = document.getElementById("gpsBtn");
+        const msg = document.getElementById("gpsMsg");
+
+        function setMsg(text, color="#475569") {
+            msg.innerHTML = text;
+            msg.style.color = color;
+        }
+
+        btn.addEventListener("click", () => {
+            if (!navigator.geolocation) {
+                setMsg("Bu tarayıcı konum almayı desteklemiyor.", "#b91c1c");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.style.opacity = "0.7";
+            btn.innerHTML = "📍 Konum alınıyor...";
+            setMsg("GPS doğruluğu bekleniyor. Lütfen birkaç saniye bekle.");
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const c = position.coords;
+                    const url = new URL(window.parent.location.href);
+
+                    url.searchParams.set("gps_lat", c.latitude);
+                    url.searchParams.set("gps_lon", c.longitude);
+                    url.searchParams.set("gps_acc", c.accuracy || "");
+                    url.searchParams.set("gps_ts", Date.now());
+
+                    window.parent.location.href = url.toString();
+                },
+                (error) => {
+                    btn.disabled = false;
+                    btn.style.opacity = "1";
+                    btn.innerHTML = "📍 Konumu Doğrula";
+
+                    let text = "Konum alınamadı.";
+
+                    if (error.code === 1) {
+                        text = "Konum izni kapalı. Tarayıcı izinlerinden konumu aç.";
+                    } else if (error.code === 2) {
+                        text = "Konum bulunamadı. GPS/Wi‑Fi açık mı kontrol et.";
+                    } else if (error.code === 3) {
+                        text = "Konum alma süresi doldu. Tekrar dene.";
+                    }
+
+                    setMsg(text, "#b91c1c");
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 20000,
+                    maximumAge: 0
+                }
+            );
+        });
+        </script>
+        """,
+        height=100,
+    )
 
 
 def render_location_screen():
-    st.subheader("📍 Konum Doğrulama")
+    read_gps_query_result()
 
-    st.caption(
-        "Telefonda ilk kullanımda tarayıcı konum izni ister. İzin çıkmazsa adres çubuğundaki kilit simgesinden konum iznini aç."
+    st.subheader("📍 Konum Doğrulama")
+    st.caption("Konumu doğrula; doğru GPS gelirse uygulama otomatik devam eder.")
+
+    error = clean_cell(st.session_state.get("location_error", ""))
+
+    if error:
+        st.warning(error)
+
+    render_gps_button()
+
+    has_coords = (
+        bool(clean_cell(st.session_state.get("location_lat", ""))) and
+        bool(clean_cell(st.session_state.get("location_lon", "")))
     )
 
-    if HAS_GEOLOCATION:
-        st.markdown("#### 1. GPS ile konum al")
-        location = streamlit_geolocation()
+    if has_coords:
+        lat, lon, zoom = get_current_location_center()
+        accuracy = clean_cell(st.session_state.get("location_accuracy", ""))
 
-        if apply_detected_location(location):
-            st.success(
-                f"GPS konumu alındı: {st.session_state.location_lat}, {st.session_state.location_lon}"
-            )
-        else:
-            st.info("Konum izni verdikten sonra birkaç saniye bekle. Gerekirse sayfayı yenile veya butona tekrar bas.")
-    else:
-        st.warning("GPS konum paketi kurulu değil: streamlit-geolocation")
-
-    lat, lon, zoom = get_current_location_center()
-
-    st.markdown("#### 2. Haritada kontrol et")
-
-    if HAS_MAP:
-        m = folium.Map(location=[lat, lon], zoom_start=zoom)
-        folium.Marker(
-            [lat, lon],
-            tooltip="Seçili konum",
-            popup="Fiş konumu"
-        ).add_to(m)
-        folium.Circle(
-            radius=30,
-            location=[lat, lon],
-            color="#2563eb",
-            fill=True,
-            fill_opacity=0.15,
-        ).add_to(m)
-
-        map_data = st_folium(m, height=280, width=700)
-
-        # Haritaya tıklanırsa manuel düzeltme olarak kabul et.
-        if isinstance(map_data, dict) and map_data.get("last_clicked"):
-            clicked = map_data.get("last_clicked", {})
-            try:
-                st.session_state.location_lat = str(round(float(clicked.get("lat")), 7))
-                st.session_state.location_lon = str(round(float(clicked.get("lng")), 7))
-                st.session_state.location_source = "Harita"
-                st.info("Haritadan seçilen konum alındı. Konumu onaylayabilirsin.")
-            except Exception:
-                pass
-    else:
-        st.info("Harita paketi kurulu değil. Konum alanı test modunda çalışıyor.")
-
-    st.markdown("#### 3. Konumu onayla")
-
-    c1, c2 = st.columns(2)
-
-    c1.metric("Enlem", clean_cell(st.session_state.get("location_lat", "")) or "Bekleniyor")
-    c2.metric("Boylam", clean_cell(st.session_state.get("location_lon", "")) or "Bekleniyor")
-
-    accuracy = clean_cell(st.session_state.get("location_accuracy", ""))
-
-    if accuracy:
-        st.caption(f"GPS doğruluk payı: yaklaşık {accuracy} metre")
-
-    with st.expander("Manuel koordinat gir / düzelt"):
-        manual_lat = st.text_input(
-            "Enlem",
-            value=clean_cell(st.session_state.get("location_lat", "")),
-            key="manual_location_lat",
-            placeholder="41.0082"
-        )
-        manual_lon = st.text_input(
-            "Boylam",
-            value=clean_cell(st.session_state.get("location_lon", "")),
-            key="manual_location_lon",
-            placeholder="28.9784"
+        st.markdown(
+            f"""
+            <div style="
+                border:1px solid #cbd5e1;
+                border-radius:14px;
+                padding:10px;
+                background:#f8fafc;
+                margin:8px 0;
+            ">
+                <div style="font-size:12px; color:#475569; font-weight:800;">Son alınan konum</div>
+                <div style="font-size:15px; font-weight:900; color:#0f172a;">{st.session_state.location_lat}, {st.session_state.location_lon}</div>
+                <div style="font-size:11px; color:#64748b;">Doğruluk: {accuracy or "bilinmiyor"} m</div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
-        if st.button("Manuel koordinatı kullan", use_container_width=True):
-            try:
-                lat_value = float(str(manual_lat).replace(",", "."))
-                lon_value = float(str(manual_lon).replace(",", "."))
-                st.session_state.location_lat = str(round(lat_value, 7))
-                st.session_state.location_lon = str(round(lon_value, 7))
-                st.session_state.location_source = "Manuel"
-                st.success("Manuel konum kaydedildi. Şimdi konumu onaylayabilirsin.")
-                st.rerun()
-            except Exception:
-                st.error("Enlem/boylam değeri geçersiz.")
+        if HAS_MAP:
+            with st.expander("Haritada kontrol et"):
+                m = folium.Map(location=[lat, lon], zoom_start=zoom, dragging=False, zoom_control=False)
+                folium.Marker([lat, lon], tooltip="Algılanan konum").add_to(m)
+                st_folium(m, height=180, width=700, returned_objects=[])
+    else:
+        st.info("İlk kez kullanıyorsan tarayıcı konum izni isteyecek. İzin verip birkaç saniye bekle.")
 
-    button_label = "Konumu Güncelle" if st.session_state.get("needs_location_update", False) else "Konumu Onayla ve Başla"
-
-    has_coords = bool(clean_cell(st.session_state.get("location_lat", ""))) and bool(clean_cell(st.session_state.get("location_lon", "")))
-
-    if st.button(button_label, use_container_width=True, type="primary", disabled=not has_coords):
-        st.session_state.location_confirmed = True
-        st.session_state.needs_location_update = False
-
-        if st.session_state.get("research_active", False):
-            st.session_state.step = "product_tree"
-        else:
-            st.session_state.step = "research_start"
-
-        st.rerun()
-
-    if not has_coords:
-        st.caption("Konumu onaylamak için GPS izni ver, haritaya tıkla veya manuel koordinat gir.")
 
 
 
