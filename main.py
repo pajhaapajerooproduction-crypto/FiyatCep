@@ -4,6 +4,7 @@ import base64
 import uuid
 import zipfile
 import urllib.parse
+import html
 from datetime import datetime
 
 import pandas as pd
@@ -2145,6 +2146,54 @@ st.markdown("""
     line-height:1.1;
 }
 
+.fc-inline-nav {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin:2px 0 6px 0;
+}
+
+.fc-nav-link {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:34px;
+    height:34px;
+    border-radius:10px;
+    border:1px solid #cbd5e1;
+    background:#f8fafc;
+    color:#0f172a !important;
+    text-decoration:none !important;
+    font-weight:900;
+    font-size:16px;
+}
+
+.fc-crumb {
+    flex:1;
+    font-size:12px;
+    font-weight:800;
+    color:#475569;
+    line-height:1.15;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.fc-tile-caption {
+    font-size:12px;
+    font-weight:900;
+    color:#0f172a;
+    line-height:1.08;
+    text-align:center;
+}
+
+.fc-tile-small {
+    font-size:10px;
+    color:#64748b;
+    font-weight:800;
+    text-align:center;
+}
+
 .receipt-item {
     border-bottom: 1px solid #e2e8f0;
     padding: 8px 0;
@@ -2179,50 +2228,92 @@ h2, h3 {
     padding: 0.35rem 0.45rem;
 }
 
-/* Mobilde Streamlit kolonları alt alta atmasın; ürün/kaynak/konum kutuları yan yana kalsın. */
-div[data-testid="stHorizontalBlock"] {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    gap: 0.35rem !important;
-    align-items: stretch !important;
-    width: 100% !important;
+/* Streamlit kolonlarını global zorlamıyoruz. Ürün/kategori alanları özel responsive grid kullanır. */
+.fc-grid {
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap:8px;
+    margin:6px 0 10px 0;
 }
 
-div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-    flex: 1 1 0px !important;
-    min-width: 0 !important;
-    width: 0 !important;
-    max-width: none !important;
+@media (min-width: 700px) {
+    .fc-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
-@media (max-width: 768px) {
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        gap: 0.28rem !important;
-        width: 100% !important;
-    }
+.fc-tile {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    min-height:116px;
+    border:1px solid #cbd5e1;
+    border-radius:16px;
+    background:#ffffff;
+    padding:8px 6px;
+    text-decoration:none !important;
+    color:#0f172a !important;
+    box-shadow:0 1px 4px rgba(15,23,42,0.06);
+    overflow:hidden;
+}
 
-    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-        flex: 1 1 0px !important;
-        min-width: 0 !important;
-        width: 0 !important;
-        max-width: none !important;
-    }
+.fc-tile:active {
+    transform:scale(0.98);
+}
 
-    .stButton>button {
-        min-height: 112px;
-        font-size: 11.5px;
-        padding: 0.3rem 0.18rem;
-    }
+.fc-tile-emoji {
+    font-size:28px;
+    line-height:1;
+    margin-bottom:6px;
+}
 
-    .fixed-bottom-nav .stButton>button {
-        min-height: 42px !important;
-        font-size: 11px !important;
-        padding: 0.2rem 0.15rem !important;
+.fc-tile-title {
+    font-size:13px;
+    font-weight:900;
+    line-height:1.12;
+    color:#0f172a;
+    max-width:100%;
+    overflow:hidden;
+    display:-webkit-box;
+    -webkit-line-clamp:3;
+    -webkit-box-orient:vertical;
+}
+
+.fc-tile-sub {
+    font-size:10px;
+    font-weight:800;
+    color:#64748b;
+    margin-top:5px;
+}
+
+.fc-receipt-grid {
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap:8px;
+    margin:8px 0;
+}
+
+@media (min-width:700px) {
+    .fc-receipt-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+}
+
+.fc-receipt-tile {
+    border:1px solid #cbd5e1;
+    border-radius:16px;
+    background:#fff;
+    padding:8px 6px;
+    min-height:148px;
+    text-align:center;
+}
+
+.fixed-bottom-nav .stButton>button {
+    min-height:42px !important;
+    font-size:11px !important;
+    padding:0.2rem 0.15rem !important;
 }
 
 div[data-testid="stTextInput"] input {
@@ -2673,7 +2764,7 @@ def render_receipt_panel():
                             border:1px solid #cbd5e1;
                             border-radius:14px;
                             padding:8px;
-                            min-height:150px;
+                            min-height:168px;
                             background:#ffffff;
                             margin-bottom:6px;
                         ">
@@ -3177,6 +3268,8 @@ def render_add_products_to_user_list_grid(df, list_id, key_prefix="user_list_gri
         st.warning("Bu seçimde ürün yok.")
         return
 
+    process_user_list_add_query(list_id, df)
+
     df = df.copy()
     df["_display_order"] = df.apply(user_list_product_order_score, axis=1)
     df["_name_order"] = df["urun_adi"].apply(normalize_for_search)
@@ -3187,32 +3280,27 @@ def render_add_products_to_user_list_grid(df, list_id, key_prefix="user_list_gri
 
     st.caption(f"Gösterilen: {len(visible)} / {len(df)}")
 
-    rows = list(visible.iterrows())
-    cols_per_row = 3
+    tile_items = []
+    for _, row in visible.iterrows():
+        product_id = clean_cell(row.get("product_id", ""))
+        title = format_product_title(row)
+        emoji = get_product_icon_emoji(product_id, title) if "get_product_icon_emoji" in globals() else ""
+        birim = clean_cell(row.get("birim", "")) or "Adet"
 
-    for start_idx in range(0, len(rows), cols_per_row):
-        chunk = rows[start_idx:start_idx + cols_per_row]
-        cols = st.columns(cols_per_row)
+        tile_items.append({
+            "emoji": emoji,
+            "title": title,
+            "sub": f"{birim} • Ekle",
+            "href": fc_query_url(list_add_pid=product_id, list_id=clean_cell(list_id)),
+        })
 
-        for col_idx, (_, row) in enumerate(chunk):
-            with cols[col_idx]:
-                product_id = clean_cell(row.get("product_id", ""))
-                title = format_product_title(row)
-                emoji = get_product_icon_emoji(product_id, title) if "get_product_icon_emoji" in globals() else ""
-                label = f"{emoji}\\n{title}\\nEkle"
-
-                if st.button(
-                    label,
-                    key=safe_key(key_prefix, list_id, product_id, start_idx + col_idx),
-                    use_container_width=True
-                ):
-                    add_product_to_user_list(list_id, row)
-                    st.rerun()
+    render_fc_tile_grid(tile_items)
 
     if len(df) > limit:
         if st.button("➕ Daha fazla ürün göster", use_container_width=True, key=safe_key(key_prefix, list_id, "more")):
             st.session_state.user_list_product_limit = min(limit + 16, 120)
             st.rerun()
+
 
 
 def render_user_list_tree_selector(list_id):
@@ -3235,7 +3323,7 @@ def render_user_list_tree_selector(list_id):
     if level_col and options:
         st.markdown("##### Kategori seç")
 
-        cols_count = 2 if len(options) < 8 else 3
+        cols_count = 3
         cols = st.columns(cols_count)
 
         for i, option in enumerate(options):
@@ -3940,12 +4028,208 @@ def product_select_label(row):
     return f"{emoji} {title} • {birim}"
 
 
+
+
+def fc_query_url(**updates):
+    try:
+        params = dict(st.query_params)
+    except Exception:
+        params = {}
+
+    for key, value in updates.items():
+        if value is None:
+            params.pop(key, None)
+        else:
+            params[key] = value
+
+    params["fc_nonce"] = datetime.now().strftime("%H%M%S%f")
+    return "?" + urllib.parse.urlencode(params, doseq=True)
+
+
+def clear_fc_query_keys(keys):
+    try:
+        for key in keys:
+            if key in st.query_params:
+                del st.query_params[key]
+    except Exception:
+        pass
+
+
+def process_compact_select_query():
+    try:
+        prefix = st.query_params.get("compact_select_prefix", "")
+        level = st.query_params.get("compact_select_level", "")
+        value = st.query_params.get("compact_select_value", "")
+    except Exception:
+        return
+
+    if isinstance(prefix, list):
+        prefix = prefix[0] if prefix else ""
+    if isinstance(level, list):
+        level = level[0] if level else ""
+    if isinstance(value, list):
+        value = value[0] if value else ""
+
+    prefix = clean_cell(prefix)
+    value = clean_cell(value)
+
+    try:
+        level = int(level)
+    except Exception:
+        level = 0
+
+    if not prefix or level < 1 or level > 5 or not value:
+        return
+
+    st.session_state[f"{prefix}_level_{level}"] = value
+    reset_compact_picker(prefix, level + 1)
+
+    clear_fc_query_keys(["compact_select_prefix", "compact_select_level", "compact_select_value", "fc_nonce"])
+    st.rerun()
+
+
+def render_fc_tile_grid(items):
+    """
+    items: dict list -> title, sub, emoji, href
+    """
+    if not items:
+        return
+
+    html_items = []
+
+    for item in items:
+        title = html.escape(clean_cell(item.get("title", "")))
+        sub = html.escape(clean_cell(item.get("sub", "")))
+        emoji = html.escape(clean_cell(item.get("emoji", "")))
+        href = html.escape(clean_cell(item.get("href", "#")))
+
+        html_items.append(
+            f"""
+            <a class="fc-tile" href="{href}">
+                <div class="fc-tile-emoji">{emoji}</div>
+                <div class="fc-tile-title">{title}</div>
+                <div class="fc-tile-sub">{sub}</div>
+            </a>
+            """
+        )
+
+    st.markdown('<div class="fc-grid">' + "".join(html_items) + "</div>", unsafe_allow_html=True)
+
+
+def process_user_list_add_query(list_id, df):
+    try:
+        add_pid = st.query_params.get("list_add_pid", "")
+        q_list_id = st.query_params.get("list_id", "")
+    except Exception:
+        return
+
+    if isinstance(add_pid, list):
+        add_pid = add_pid[0] if add_pid else ""
+    if isinstance(q_list_id, list):
+        q_list_id = q_list_id[0] if q_list_id else ""
+
+    add_pid = clean_cell(add_pid)
+    q_list_id = clean_cell(q_list_id)
+
+    if not add_pid or q_list_id != clean_cell(list_id):
+        return
+
+    matched = products_df[products_df["product_id"].astype(str) == add_pid].copy()
+
+    if matched.empty:
+        matched = df[df["product_id"].astype(str) == add_pid].copy()
+
+    if not matched.empty:
+        add_product_to_user_list(list_id, matched.iloc[0])
+
+    clear_fc_query_keys(["list_add_pid", "list_id", "fc_nonce"])
+    st.rerun()
+
+
+def process_compact_nav_query():
+    try:
+        action = st.query_params.get("compact_nav", "")
+        prefix = st.query_params.get("compact_prefix", "")
+    except Exception:
+        return
+
+    if isinstance(action, list):
+        action = action[0] if action else ""
+
+    if isinstance(prefix, list):
+        prefix = prefix[0] if prefix else ""
+
+    action = clean_cell(action)
+    prefix = clean_cell(prefix)
+
+    if not action or not prefix:
+        return
+
+    if action == "reset":
+        reset_compact_picker(prefix, 1)
+
+    elif action == "up":
+        deepest = 0
+
+        for i in range(1, 6):
+            if clean_cell(st.session_state.get(f"{prefix}_level_{i}", "")):
+                deepest = i
+
+        if deepest <= 1:
+            reset_compact_picker(prefix, 1)
+        else:
+            reset_compact_picker(prefix, deepest)
+
+    try:
+        for key in ["compact_nav", "compact_prefix", "compact_nonce"]:
+            if key in st.query_params:
+                del st.query_params[key]
+    except Exception:
+        pass
+
+    st.rerun()
+
+
+def compact_nav_url(prefix, action):
+    try:
+        params = dict(st.query_params)
+    except Exception:
+        params = {}
+
+    params["compact_nav"] = action
+    params["compact_prefix"] = prefix
+    params["compact_nonce"] = datetime.now().strftime("%H%M%S%f")
+
+    return "?" + urllib.parse.urlencode(params, doseq=True)
+
+
+def render_compact_inline_nav(prefix, selected_parts):
+    if not selected_parts:
+        return
+
+    crumb = " > ".join(selected_parts)
+
+    st.markdown(
+        f"""
+        <div class="fc-inline-nav">
+            <a class="fc-nav-link" href="{compact_nav_url(prefix, 'up')}" title="Bir üst">‹</a>
+            <a class="fc-nav-link" href="{compact_nav_url(prefix, 'reset')}" title="Başa dön">⌂</a>
+            <div class="fc-crumb">{crumb}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 def render_compact_category_product_picker(prefix, target="receipt", list_id="", title="Ürün seç"):
     """
-    Normal akış:
-    Kategori seçimi butonlu ilerler, ürünler büyük kart/kutu olarak gelir.
-    Selectbox yok. Uzun tek satır buton yok.
+    Responsive grid akışı:
+    Mobilde 2 kolon, geniş ekranda 3 kolon.
+    Streamlit columns kullanılmaz; taşma/sıkışma olmaz.
     """
+    process_compact_nav_query()
+    process_compact_select_query()
+
     st.markdown(f"#### {title}")
 
     selected_parts = []
@@ -3956,30 +4240,8 @@ def render_compact_category_product_picker(prefix, target="receipt", list_id="",
         if value:
             selected_parts.append(value)
 
-    if selected_parts:
-        st.caption(" > ".join(selected_parts))
+    render_compact_inline_nav(prefix, selected_parts)
 
-        nav1, nav2 = st.columns(2)
-
-        if nav1.button("⬅️ Bir Üst", use_container_width=True, key=safe_key("compact_up", prefix)):
-            deepest = 0
-
-            for i in range(1, 6):
-                if clean_cell(st.session_state.get(f"{prefix}_level_{i}", "")):
-                    deepest = i
-
-            if deepest <= 1:
-                reset_compact_picker(prefix, 1)
-            else:
-                reset_compact_picker(prefix, deepest)
-
-            st.rerun()
-
-        if nav2.button("🏠 Başa Dön", use_container_width=True, key=safe_key("compact_reset", prefix)):
-            reset_compact_picker(prefix, 1)
-            st.rerun()
-
-    # Sıradaki boş kategori seviyesi.
     next_level = None
     level_col = None
     options = []
@@ -3998,28 +4260,23 @@ def render_compact_category_product_picker(prefix, target="receipt", list_id="",
     if level_col and options:
         st.markdown("##### Kategori seç")
 
-        cols_per_row = 2 if len(options) <= 4 else 3
+        tile_items = []
+        for option in options:
+            count = len(filtered[filtered[level_col] == option])
+            tile_items.append({
+                "emoji": "▦",
+                "title": option,
+                "sub": f"{count} ürün",
+                "href": fc_query_url(
+                    compact_select_prefix=prefix,
+                    compact_select_level=str(next_level),
+                    compact_select_value=option,
+                ),
+            })
 
-        for start_idx in range(0, len(options), cols_per_row):
-            chunk = options[start_idx:start_idx + cols_per_row]
-            cols = st.columns(cols_per_row)
-
-            for col_idx, option in enumerate(chunk):
-                count = len(filtered[filtered[level_col] == option])
-                label = f"{option}\n{count}"
-
-                if cols[col_idx].button(
-                    label,
-                    key=safe_key("compact_level_button", prefix, next_level, option, start_idx + col_idx),
-                    use_container_width=True,
-                ):
-                    # Kritik: seçim önce session_state'e yazılır, sonra alt seviyeler temizlenir.
-                    st.session_state[f"{prefix}_level_{next_level}"] = option
-                    reset_compact_picker(prefix, next_level + 1)
-                    st.rerun()
+        render_fc_tile_grid(tile_items)
 
     product_count = len(filtered)
-
     show_products = (
         product_count <= 60 or
         next_level is None or
@@ -4034,7 +4291,7 @@ def render_compact_category_product_picker(prefix, target="receipt", list_id="",
         else:
             render_add_products_to_user_list_grid(filtered, list_id, key_prefix=safe_key("compact_list_products", prefix))
     else:
-        st.info(f"{product_count} ürün var. Kategori butonlarıyla biraz daha daralt.")
+        st.info(f"{product_count} ürün var. Kategori kutularıyla biraz daha daralt.")
 
 
 
@@ -4145,9 +4402,9 @@ def render_product_list(df):
         st.warning("Bu seçimde ürün yok.")
         return
 
-    df = df.copy()
+    handle_add_product_query(df)
 
-    # Ürün ekleme URL/query-param üzerinden değil, aynı oturumdaki Streamlit butonu üzerinden yapılır.
+    df = df.copy()
     df["_display_order"] = df.apply(product_order_score, axis=1)
     df["_name_order"] = df["urun_adi"].apply(normalize_for_search)
     df = df.sort_values(["_display_order", "_name_order"])
@@ -4157,34 +4414,27 @@ def render_product_list(df):
 
     st.caption(f"Gösterilen: {len(visible)} / {len(df)}")
 
-    rows = list(visible.iterrows())
-    products_per_row = 3
+    tile_items = []
+    for _, row in visible.iterrows():
+        product_id = clean_cell(row["product_id"])
+        title = format_product_title(row)
+        emoji = get_product_icon_emoji(product_id, title) if "get_product_icon_emoji" in globals() else ""
+        birim = clean_cell(row.get("birim", "")) or "Adet"
 
-    for start_idx in range(0, len(rows), products_per_row):
-        chunk = rows[start_idx:start_idx + products_per_row]
-        cols = st.columns(products_per_row)
+        tile_items.append({
+            "emoji": emoji,
+            "title": title,
+            "sub": f"{birim} • Ekle",
+            "href": fc_query_url(add_pid=product_id),
+        })
 
-        for col_idx, (_, row) in enumerate(chunk):
-            with cols[col_idx]:
-                product_id = clean_cell(row["product_id"])
-                title = format_product_title(row)
-                emoji = get_product_icon_emoji(product_id, title) if "get_product_icon_emoji" in globals() else ""
-
-                # Kartın kendisi buton: emoji / ürün adı / ekle satır satır görünür.
-                product_label = f"{emoji}\n{title}\nEkle".strip()
-
-                if st.button(
-                    product_label,
-                    key=safe_key("add_product_tile", product_id, start_idx + col_idx),
-                    use_container_width=True
-                ):
-                    add_to_receipt(row)
-                    st.rerun()
+    render_fc_tile_grid(tile_items)
 
     if len(df) > limit:
         if st.button("➕ Daha fazla ürün göster", use_container_width=True):
             st.session_state.product_list_limit = min(limit + 16, 96)
             st.rerun()
+
 
 
 def render_quick_search():
