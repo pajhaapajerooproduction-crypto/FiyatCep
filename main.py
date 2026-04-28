@@ -2071,11 +2071,78 @@ st.markdown("""
 }
 
 .receipt-box {
-    border: 2px solid #0f172a;
-    border-radius: 18px;
-    padding: 14px;
-    background: #f8fafc;
-    margin-bottom: 16px;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    margin-bottom: 8px;
+}
+
+.app-header {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:0 0 4px 0;
+    padding:0;
+}
+
+.app-logo-img {
+    max-height:74px;
+    width:auto;
+    object-fit:contain;
+    display:block;
+}
+
+.app-title-text {
+    font-size:22px;
+    font-weight:900;
+    color:#0f172a;
+    line-height:1.05;
+}
+
+.status-chip-row {
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin:2px 0 6px 0;
+}
+
+.status-chip {
+    border:1px solid #cbd5e1;
+    border-radius:999px;
+    padding:5px 9px;
+    font-size:11px;
+    font-weight:800;
+    background:#f8fafc;
+    color:#334155;
+}
+
+.receipt-mini-card {
+    border:1px solid #cbd5e1;
+    border-radius:14px;
+    padding:8px;
+    background:#ffffff;
+    min-height:74px;
+}
+
+.receipt-mini-title {
+    font-size:11px;
+    font-weight:900;
+    color:#475569;
+    margin-bottom:3px;
+}
+
+.receipt-mini-value {
+    font-size:13px;
+    font-weight:900;
+    color:#0f172a;
+    line-height:1.16;
+}
+
+.receipt-mini-note {
+    font-size:10px;
+    color:#64748b;
+    line-height:1.1;
 }
 
 .receipt-item {
@@ -2084,10 +2151,10 @@ st.markdown("""
 }
 
 .block-container {
-    padding-top: 0.65rem !important;
+    padding-top: 0.05rem !important;
     padding-left: 0.65rem !important;
     padding-right: 0.65rem !important;
-    padding-bottom: 4.8rem !important;
+    padding-bottom: 4.2rem !important;
     max-width: 760px;
 }
 
@@ -2187,6 +2254,11 @@ def init_state():
         "price_entry_value": "",
         "normal_product_picker_query": "",
         "user_list_picker_query": "",
+        "normal_picker_level_1": "",
+        "normal_picker_level_2": "",
+        "normal_picker_level_3": "",
+        "normal_picker_level_4": "",
+        "normal_picker_level_5": "",
     }
 
     for i in range(1, 6):
@@ -2205,26 +2277,73 @@ load_open_research_into_state()
 # 8. ÜST BİLGİ
 # =========================================================
 
-st.title("🧾 FiyatCep")
-st.caption("Data paketi: v9 + araştırma oturumu v1")
+def render_app_header():
+    logo_candidates = [
+        "logo.png",
+        "fiyatcep_logo.png",
+        "FiyatCep_logo.png",
+        "assets/logo.png",
+        "assets/fiyatcep_logo.png",
+    ]
 
-if st.session_state.get("research_active", False):
-    st.success(f"Açık fiyat araştırması: {st.session_state.active_research_mode}")
-else:
-    st.caption("Açık fiyat araştırması yok.")
+    logo_path = ""
 
-if st.session_state.source_name:
-    st.caption(
-        f"Fiş kaynağı: {st.session_state.source_name}"
-        + (f" / {st.session_state.source_type}" if st.session_state.source_type else "")
-    )
-else:
-    st.caption("Önce ürünleri seç. Fişi kaydetmeden önce fiyat kaynağını seçeceksin.")
+    for candidate in logo_candidates:
+        if os.path.exists(candidate):
+            logo_path = candidate
+            break
 
-if st.session_state.last_save_status:
-    st.success(st.session_state.last_save_status)
+    h1, h2 = st.columns([1, 4])
 
-# Konum durumu, tüm fonksiyonlar tanımlandıktan sonra router öncesinde gösterilir.
+    with h1:
+        if logo_path:
+            try:
+                st.image(logo_path, width=74)
+            except Exception:
+                st.markdown("### 🧾")
+        else:
+            st.markdown("### 🧾")
+
+    with h2:
+        st.markdown(
+            """
+            <div style="font-size:24px;font-weight:900;line-height:1.05;color:#0f172a;margin-top:6px;">
+                FiyatCep
+            </div>
+            <div style="font-size:11px;color:#64748b;font-weight:700;margin-top:2px;">
+                Akıllı Alışveriş Motoru
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    chips = []
+
+    if st.session_state.get("research_active", False):
+        chips.append(f"🔍 {st.session_state.active_research_mode}")
+    else:
+        chips.append("Araştırma yok")
+
+    if st.session_state.source_name:
+        chips.append(f"🏪 {st.session_state.source_name}")
+    else:
+        chips.append("Kaynak seçilmedi")
+
+    if st.session_state.get("location_confirmed", False):
+        chips.append("📍 Konum var")
+    else:
+        chips.append("📍 Konum bekliyor")
+
+    chip_html = "".join([f'<span class="status-chip">{chip}</span>' for chip in chips])
+    st.markdown(f'<div class="status-chip-row">{chip_html}</div>', unsafe_allow_html=True)
+
+    if st.session_state.last_save_status:
+        st.success(st.session_state.last_save_status)
+
+
+render_app_header()
+
+# Konum arka planda çalışır; üstte ayrı konum paneli gösterilmez.
 
 # =========================================================
 # 9. FİŞ PANELİ
@@ -2358,39 +2477,71 @@ def render_price_entry_screen():
 def render_receipt_panel():
     st.markdown('<div class="receipt-box">', unsafe_allow_html=True)
 
-    st.subheader("Fiş / Adisyon")
+    st.markdown("### Fiş / Adisyon")
 
-    # Konum fişin üstünde sabit görünsün; zorunlu güncelleme yerine kullanıcı istediğinde değiştirsin.
-    loc1, loc2 = st.columns([3, 1])
+    # Konum ve kaynak fişin hemen altında, yan yana kısa kartlar.
+    loc_col, src_col = st.columns(2)
 
-    if st.session_state.location_confirmed:
-        loc_text = compact_join([
-            st.session_state.get("location_lat", ""),
-            st.session_state.get("location_lon", "")
-        ], sep=", ")
-        loc1.markdown(
+    with loc_col:
+        if st.session_state.location_confirmed:
+            loc_text = compact_join([
+                st.session_state.get("location_lat", ""),
+                st.session_state.get("location_lon", "")
+            ], sep=", ")
+            loc_value = loc_text or "Konum doğrulandı"
+            loc_note = "Fişe yazılacak"
+            loc_border = "#bbf7d0"
+            loc_bg = "#f0fdf4"
+        else:
+            loc_value = "Konum bekliyor"
+            loc_note = "Arka planda alınır"
+            loc_border = "#fde68a"
+            loc_bg = "#fffbeb"
+
+        st.markdown(
             f"""
-            <div style="border:1px solid #cbd5e1; border-radius:14px; padding:10px; background:#eef2ff; margin-bottom:8px;">
-                <div style="font-size:12px; color:#475569; font-weight:800;">📍 Fiş Konumu</div>
-                <div style="font-size:16px; font-weight:900; color:#0f172a;">{loc_text or "Konum doğrulandı"}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    else:
-        loc1.markdown(
-            """
-            <div style="border:1px solid #fecaca; border-radius:14px; padding:10px; background:#fef2f2; margin-bottom:8px;">
-                <div style="font-size:12px; color:#991b1b; font-weight:800;">📍 Fiş Konumu</div>
-                <div style="font-size:16px; font-weight:900; color:#991b1b;">Konum doğrulanmadı</div>
+            <div class="receipt-mini-card" style="border-color:{loc_border}; background:{loc_bg};">
+                <div class="receipt-mini-title">📍 Konum</div>
+                <div class="receipt-mini-value">{loc_value}</div>
+                <div class="receipt-mini-note">{loc_note}</div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-    if loc2.button("Konumu Değiştir", use_container_width=True, key="receipt_update_location"):
-        st.session_state.step = "location"
-        st.rerun()
+        if st.button("Konumu Yenile", use_container_width=True, key="receipt_update_location"):
+            st.session_state.step = "location"
+            st.rerun()
+
+    with src_col:
+        apply_auto_source_if_needed()
+
+        if st.session_state.source_name:
+            auto_note = "Otomatik" if st.session_state.get("source_auto_selected", False) else "Seçili"
+            source_value = st.session_state.source_name
+            source_note = compact_join([st.session_state.source_type, auto_note], sep=" • ")
+            src_border = "#bbf7d0"
+            src_bg = "#f0fdf4"
+        else:
+            source_value = "Kaynak bekliyor"
+            source_note = "Fişten önce seç"
+            src_border = "#fde68a"
+            src_bg = "#fffbeb"
+
+        st.markdown(
+            f"""
+            <div class="receipt-mini-card" style="border-color:{src_border}; background:{src_bg};">
+                <div class="receipt-mini-title">🏪 Kaynak</div>
+                <div class="receipt-mini-value">{source_value}</div>
+                <div class="receipt-mini-note">{source_note}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        if st.button("Kaynağı Değiştir", key="change_source_from_receipt", use_container_width=True):
+            st.session_state.step = "source_smart"
+            st.rerun()
 
     # Streamlit kuralı:
     # Bir widget aynı çalıştırmada oluşturulduktan sonra onun session_state key'i değiştirilemez.
@@ -2403,36 +2554,6 @@ def render_receipt_panel():
                 del st.session_state[key]
 
         st.session_state.clear_receipt_inputs_next_run = False
-
-    apply_auto_source_if_needed()
-
-    if not st.session_state.source_name:
-        st.markdown(
-            """
-            <div style="border:1px solid #fde68a; border-radius:14px; padding:10px; background:#fffbeb; margin-bottom:10px;">
-                <div style="font-size:12px; color:#92400e; font-weight:800;">🏪 Fiş Kaynağı</div>
-                <div style="font-size:16px; font-weight:900; color:#92400e;">Kaynak henüz seçilmedi</div>
-                <div style="font-size:11px; color:#92400e;">Ürün ekleyince otomatik önerilir; istersen elle değiştir.</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    else:
-        csrc1, csrc2 = st.columns([3, 1])
-        auto_note = "Otomatik öneri" if st.session_state.get("source_auto_selected", False) else "Seçili kaynak"
-        csrc1.markdown(
-            f"""
-            <div style="border:1px solid #bbf7d0; border-radius:14px; padding:10px; background:#f0fdf4; margin-bottom:10px;">
-                <div style="font-size:12px; color:#166534; font-weight:800;">🏪 Fiş Kaynağı</div>
-                <div style="font-size:20px; font-weight:900; color:#052e16;">{st.session_state.source_name}</div>
-                <div style="font-size:12px; color:#166534;">{st.session_state.source_type} • {auto_note}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        if csrc2.button("Kaynağı Değiştir", key="change_source_from_receipt", use_container_width=True):
-            st.session_state.step = "source_smart"
-            st.rerun()
 
     if not st.session_state.receipt_items:
         st.info("Fişe henüz ürün eklenmedi.")
@@ -3771,9 +3892,9 @@ def product_select_label(row):
 
 def render_compact_category_product_picker(prefix, target="receipt", list_id="", title="Ürün seç"):
     """
-    Normal mobil akış:
-    Kategori seçimi yine butonlu ilerler.
-    Ama eski uzun satır butonları yerine kompakt grid/kutu düzeni kullanılır.
+    Normal akış:
+    Kategori seçimi butonlu ilerler, ürünler büyük kart/kutu olarak gelir.
+    Selectbox yok. Uzun tek satır buton yok.
     """
     st.markdown(f"#### {title}")
 
@@ -3792,6 +3913,7 @@ def render_compact_category_product_picker(prefix, target="receipt", list_id="",
 
         if nav1.button("⬅️ Bir Üst", use_container_width=True, key=safe_key("compact_up", prefix)):
             deepest = 0
+
             for i in range(1, 6):
                 if clean_cell(st.session_state.get(f"{prefix}_level_{i}", "")):
                     deepest = i
@@ -3807,7 +3929,7 @@ def render_compact_category_product_picker(prefix, target="receipt", list_id="",
             reset_compact_picker(prefix, 1)
             st.rerun()
 
-    # Sıradaki seçilecek kategori seviyesi.
+    # Sıradaki boş kategori seviyesi.
     next_level = None
     level_col = None
     options = []
@@ -3826,8 +3948,6 @@ def render_compact_category_product_picker(prefix, target="receipt", list_id="",
     if level_col and options:
         st.markdown("##### Kategori seç")
 
-        # Mobilde uzun satır değil: kompakt 3'lü buton grid.
-        # Çok kısa listelerde 2 sütun daha rahat durur.
         cols_per_row = 2 if len(options) <= 4 else 3
 
         for start_idx in range(0, len(options), cols_per_row):
@@ -3836,20 +3956,20 @@ def render_compact_category_product_picker(prefix, target="receipt", list_id="",
 
             for col_idx, option in enumerate(chunk):
                 count = len(filtered[filtered[level_col] == option])
-                label = f"{option}\n{count} ürün"
+                label = f"{option}\n{count}"
 
                 if cols[col_idx].button(
                     label,
                     key=safe_key("compact_level_button", prefix, next_level, option, start_idx + col_idx),
                     use_container_width=True,
                 ):
+                    # Kritik: seçim önce session_state'e yazılır, sonra alt seviyeler temizlenir.
                     st.session_state[f"{prefix}_level_{next_level}"] = option
                     reset_compact_picker(prefix, next_level + 1)
                     st.rerun()
 
     product_count = len(filtered)
 
-    # Çok geniş ürün havuzunu basmayalım, kategori butonlarıyla daraltalım.
     show_products = (
         product_count <= 60 or
         next_level is None or
@@ -3906,7 +4026,6 @@ def render_normal_product_add_panel(target="receipt", list_id=""):
         title = "Listeye ürün ekle"
 
     st.markdown(f"### {title}")
-    st.markdown('<div class="compact-note">Kategori ağacı arkada çalışıyor; ekranda kompakt butonlarla ilerlersin. Uzun liste yok.</div>', unsafe_allow_html=True)
 
     tab_cat, tab_search = st.tabs(["Butonla seç", "Arayarak ekle"])
 
@@ -3928,16 +4047,13 @@ def render_product_tree_screen():
 
     st.subheader("💰 Fiyat Girişi")
 
-    # Normal kullanımda önce fiş/liste görünür; ürün ekleme destek panelinde kalır.
-    render_receipt_panel()
+    # Kullanıcı ürün eklemeyle karşılanır.
+    render_normal_product_add_panel(target="receipt")
 
     st.markdown("---")
 
-    expanded = not bool(st.session_state.receipt_items)
-
-    with st.expander("➕ Ürün ekle", expanded=expanded):
-        render_normal_product_add_panel(target="receipt")
-
+    # Fiş / adisyon ürün seçiminin hemen altında.
+    render_receipt_panel()
 
 
 
@@ -5769,14 +5885,6 @@ def render_fixed_bottom_nav():
 # =========================================================
 # 11. ANA ROUTER
 # =========================================================
-
-if st.session_state.step != "location":
-    render_background_location_bar()
-
-    if not st.session_state.get("location_confirmed", False):
-        if st.button("📍 Konum ekranını aç", use_container_width=True, key="open_location_screen_top"):
-            st.session_state.step = "location"
-            st.rerun()
 
 if products_df.empty:
     st.error("products_master_clean.csv bulunamadı veya boş.")
