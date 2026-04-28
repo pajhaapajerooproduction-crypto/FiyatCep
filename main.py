@@ -2172,11 +2172,41 @@ h2, h3 {
     min-height: 44px;
     border-radius: 12px;
     font-weight: 800;
-    white-space: normal;
+    white-space: pre-line;
     line-height: 1.12;
     word-break: break-word;
     font-size: 14px;
     padding: 0.35rem 0.45rem;
+}
+
+/* Mobilde Streamlit kolonları alt alta atmasın; ürün/kaynak/konum kutuları yan yana kalsın. */
+div[data-testid="stHorizontalBlock"] {
+    gap: 0.35rem !important;
+    align-items: stretch !important;
+}
+
+div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: auto !important;
+}
+
+@media (max-width: 768px) {
+    div[data-testid="stHorizontalBlock"] {
+        flex-direction: row !important;
+    }
+
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        width: auto !important;
+    }
+
+    .stButton>button {
+        min-height: 58px;
+        font-size: 12px;
+        padding: 0.28rem 0.25rem;
+    }
 }
 
 div[data-testid="stTextInput"] input {
@@ -2593,7 +2623,7 @@ def render_receipt_panel():
         all_valid = True
 
         rows = list(enumerate(st.session_state.receipt_items))
-        products_per_row = 4
+        products_per_row = 3
 
         for start_idx in range(0, len(rows), products_per_row):
             chunk = rows[start_idx:start_idx + products_per_row]
@@ -2619,7 +2649,7 @@ def render_receipt_panel():
                         price_text = f"{format_price(str(parsed))} ₺"
                         price_color = "#0f172a"
 
-                    icon_html = get_product_icon_html(item["product_id"], f"{item['title']} {item['path']}", size=48)
+                    icon_html = get_product_icon_html(item["product_id"], f"{item['title']} {item['path']}", size=38)
 
                     st.markdown(
                         f"""
@@ -2627,14 +2657,14 @@ def render_receipt_panel():
                             border:1px solid #cbd5e1;
                             border-radius:14px;
                             padding:8px;
-                            min-height:178px;
+                            min-height:136px;
                             background:#ffffff;
                             margin-bottom:6px;
                         ">
                             {icon_html}
                             <div style="font-weight:900; font-size:13px; line-height:1.18; color:#0f172a;">{i + 1}. {item['title']}</div>
                             <div style="font-size:10px; color:#64748b; margin-top:5px;">{item['birim']} • {item['path']}</div>
-                            <div style="font-size:18px; color:{price_color}; font-weight:900; margin-top:8px;">{price_text}</div>
+                            <div style="font-size:15px; color:{price_color}; font-weight:900; margin-top:8px;">{price_text}</div>
                         </div>
                         """,
                         unsafe_allow_html=True
@@ -3142,7 +3172,7 @@ def render_add_products_to_user_list_grid(df, list_id, key_prefix="user_list_gri
     st.caption(f"Gösterilen: {len(visible)} / {len(df)}")
 
     rows = list(visible.iterrows())
-    cols_per_row = 4
+    cols_per_row = 3
 
     for start_idx in range(0, len(rows), cols_per_row):
         chunk = rows[start_idx:start_idx + cols_per_row]
@@ -3153,7 +3183,7 @@ def render_add_products_to_user_list_grid(df, list_id, key_prefix="user_list_gri
                 product_id = clean_cell(row.get("product_id", ""))
                 title = format_product_title(row)
                 emoji = get_product_icon_emoji(product_id, title) if "get_product_icon_emoji" in globals() else ""
-                label = f"{emoji}\\n{title}\\nListeye ekle"
+                label = f"{emoji}\\n{title}\\n+ Listeye"
 
                 if st.button(
                     label,
@@ -3274,7 +3304,7 @@ def render_user_list_builder_screen():
         st.info("Listeye henüz ürün eklenmedi.")
     else:
         rows = list(current_items.iterrows())
-        cols_per_row = 4
+        cols_per_row = 3
 
         for start_idx in range(0, len(rows), cols_per_row):
             chunk = rows[start_idx:start_idx + cols_per_row]
@@ -4112,7 +4142,7 @@ def render_product_list(df):
     st.caption(f"Gösterilen: {len(visible)} / {len(df)}")
 
     rows = list(visible.iterrows())
-    products_per_row = 4
+    products_per_row = 3
 
     for start_idx in range(0, len(rows), products_per_row):
         chunk = rows[start_idx:start_idx + products_per_row]
@@ -4124,9 +4154,8 @@ def render_product_list(df):
                 title = format_product_title(row)
                 emoji = get_product_icon_emoji(product_id, title) if "get_product_icon_emoji" in globals() else ""
 
-                # Kartın kendisi buton: kategori/spec yazıları bilinçli olarak kaldırıldı.
-                # Ürün adı tek odak; kalabalık kart görünümünü engeller.
-                product_label = f"{emoji}\n{title}\n1 Ekle".strip()
+                # Kartın kendisi buton: emoji / ürün adı / ekle satır satır görünür.
+                product_label = f"{emoji}\n{title}\n+ Ekle".strip()
 
                 if st.button(
                     product_label,
@@ -5238,7 +5267,7 @@ def render_route_cards(cheapest_df, shopping_mode=False, research_id=""):
         .tolist()
     )
 
-    products_per_row = 4
+    products_per_row = 3
 
     for source_idx, source_name in enumerate(source_order):
         group = route_df[route_df["source_name"] == source_name].copy()
@@ -5642,7 +5671,7 @@ def render_research_preview_cards(research_id, limit=8):
     st.caption("Bu araştırmada kayıtlı son ürünler:")
 
     rows = list(preview.iterrows())
-    cols_per_row = 4
+    cols_per_row = 3
 
     for start_idx in range(0, len(rows), cols_per_row):
         chunk = rows[start_idx:start_idx + cols_per_row]
