@@ -2245,6 +2245,7 @@ def init_state():
         "route_excluded_sources": [],
 
         "product_list_limit": 12,
+        "user_list_product_limit": 12,
         "search_query": "",
         "search_limit": 8,
         "clear_search_query_next_run": False,
@@ -3123,6 +3124,9 @@ def user_list_product_order_score(row):
 
 
 def render_add_products_to_user_list_grid(df, list_id, key_prefix="user_list_grid"):
+    if "user_list_product_limit" not in st.session_state:
+        st.session_state.user_list_product_limit = 12
+
     if df.empty:
         st.warning("Bu seçimde ürün yok.")
         return
@@ -4088,6 +4092,9 @@ def handle_add_product_query(df):
 
 
 def render_product_list(df):
+    if "product_list_limit" not in st.session_state:
+        st.session_state.product_list_limit = 12
+
     if df.empty:
         st.warning("Bu seçimde ürün yok.")
         return
