@@ -1891,9 +1891,10 @@ def save_receipt():
         st.error("Fiş kaydetmeden önce Fiyat Araştırması Başlat.")
         return
 
+    # Konum artık fiyat girişini kilitlemez.
+    # GPS arka planda gelirse fişe yazılır; gelmezse kayıt konumsuz/test kaydı olarak kalır.
     if not st.session_state.location_confirmed:
-        st.error("Bu yeni fiş için konumu güncellemen gerekiyor.")
-        return
+        st.warning("Konum henüz netleşmedi. Fiş yine kaydedilecek; konum gelirse sonraki fişlere işlenir.")
 
     if not st.session_state.source_name:
         st.error("Kaydetmeden önce önerilen fiş kaynağını onayla, değiştir ya da elle yaz.")
@@ -2082,18 +2083,47 @@ st.markdown("""
     padding: 8px 0;
 }
 
+.block-container {
+    padding-top: 0.65rem !important;
+    padding-left: 0.65rem !important;
+    padding-right: 0.65rem !important;
+    padding-bottom: 4.8rem !important;
+    max-width: 760px;
+}
+
+h1 {
+    font-size: 1.45rem !important;
+    margin-bottom: 0.15rem !important;
+}
+
+h2, h3 {
+    margin-top: 0.45rem !important;
+    margin-bottom: 0.45rem !important;
+}
+
 .stButton>button {
-    min-height: 54px;
+    min-height: 44px;
     border-radius: 12px;
     font-weight: 800;
     white-space: normal;
-    line-height: 1.15;
+    line-height: 1.12;
     word-break: break-word;
-    font-size: 15px;
+    font-size: 14px;
+    padding: 0.35rem 0.45rem;
 }
 
 div[data-testid="stTextInput"] input {
+    min-height: 40px;
+}
+
+div[data-baseweb="select"] > div {
     min-height: 42px;
+}
+
+.compact-note {
+    color:#64748b;
+    font-size:12px;
+    line-height:1.25;
 }
 .fixed-bottom-nav {
     position: fixed;
@@ -2119,7 +2149,7 @@ div[data-testid="stTextInput"] input {
 
 def init_state():
     defaults = {
-        "step": "location",
+        "step": "research_start",
         "location_lat": "",
         "location_lon": "",
         "location_confirmed": False,
@@ -2155,6 +2185,8 @@ def init_state():
         "source_group_filter": "Tümü",
         "price_entry_index": None,
         "price_entry_value": "",
+        "normal_product_picker_query": "",
+        "user_list_picker_query": "",
     }
 
     for i in range(1, 6):
@@ -2191,6 +2223,14 @@ else:
 
 if st.session_state.last_save_status:
     st.success(st.session_state.last_save_status)
+
+# Konum akışı artık kilit ekranı değil; arka planda denenir.
+render_background_location_bar()
+
+if not st.session_state.get("location_confirmed", False):
+    if st.button("📍 Konum ekranını aç", use_container_width=True, key="open_location_screen_top"):
+        st.session_state.step = "location"
+        st.rerun()
 
 
 # =========================================================
@@ -2572,6 +2612,12 @@ def read_gps_query_result():
     lat_text = get_query_param_value("gps_lat")
     lon_text = get_query_param_value("gps_lon")
     acc_text = get_query_param_value("gps_acc")
+    err_text = get_query_param_value("gps_error")
+
+    if err_text:
+        st.session_state.location_error = err_text
+        clear_gps_query_params()
+        st.rerun()
 
     if not lat_text or not lon_text:
         return False
@@ -2593,49 +2639,49 @@ def read_gps_query_result():
     st.session_state.location_lon = str(round(lon, 7))
     st.session_state.location_accuracy = "" if accuracy is None else str(round(accuracy, 1))
     st.session_state.location_source = "GPS"
-
-    if accuracy is not None and accuracy > LOCATION_MAX_ACCURACY_METERS:
-        st.session_state.location_confirmed = False
-        st.session_state.location_error = (
-            f"Konum çok yaklaşık geldi: {round(accuracy)} m. "
-            f"Daha doğru sonuç için tekrar Konumu Doğrula."
-        )
-        clear_gps_query_params()
-        st.rerun()
-
     st.session_state.location_confirmed = True
     st.session_state.needs_location_update = False
-    st.session_state.location_error = ""
+
+    if accuracy is not None and accuracy > LOCATION_MAX_ACCURACY_METERS:
+        st.session_state.location_error = f"Konum yaklaşık geldi: {round(accuracy)} m. Test için kaydedildi; istersen sonra yenile."
+    else:
+        st.session_state.location_error = ""
 
     clear_gps_query_params()
 
-    if st.session_state.get("research_active", False):
-        st.session_state.step = "product_tree"
-    else:
-        st.session_state.step = "research_start"
-
+    # Artık GPS sonucu kullanıcıyı başka ekrana atmaz.
+    # Hangi ekrandaysa orada kalır; sadece durum güncellenir.
     st.rerun()
 
 
-def render_gps_button():
+
+
+def render_gps_button(label="📍 Konumu Güncelle", compact=False, auto=False):
+    height = 44 if compact else 96
+    min_height = 42 if compact else 58
+    font_size = 14 if compact else 18
+    bg = "#2563eb" if compact else "#16a34a"
+
+    auto_script = "setTimeout(requestLocation, 400);" if auto else ""
+
     components.html(
-        """
+        f"""
         <div style="width:100%; padding:0; margin:0;">
             <button id="gpsBtn" style="
                 width:100%;
-                min-height:58px;
+                min-height:{min_height}px;
                 border:0;
                 border-radius:14px;
-                background:#16a34a;
+                background:{bg};
                 color:white;
-                font-size:18px;
+                font-size:{font_size}px;
                 font-weight:900;
                 cursor:pointer;
-                box-shadow:0 2px 8px rgba(22,163,74,.22);
-            ">📍 Konumu Doğrula</button>
+                box-shadow:0 2px 8px rgba(37,99,235,.18);
+            ">{label}</button>
             <div id="gpsMsg" style="
-                margin-top:8px;
-                font-size:13px;
+                margin-top:6px;
+                font-size:12px;
                 color:#475569;
                 line-height:1.25;
                 font-family:Arial, sans-serif;
@@ -2646,24 +2692,31 @@ def render_gps_button():
         const btn = document.getElementById("gpsBtn");
         const msg = document.getElementById("gpsMsg");
 
-        function setMsg(text, color="#475569") {
+        function setMsg(text, color="#475569") {{
             msg.innerHTML = text;
             msg.style.color = color;
-        }
+        }}
 
-        btn.addEventListener("click", () => {
-            if (!navigator.geolocation) {
-                setMsg("Bu tarayıcı konum almayı desteklemiyor.", "#b91c1c");
+        function sendError(text) {{
+            const url = new URL(window.parent.location.href);
+            url.searchParams.set("gps_error", text);
+            url.searchParams.set("gps_ts", Date.now());
+            window.parent.location.href = url.toString();
+        }}
+
+        function requestLocation() {{
+            if (!navigator.geolocation) {{
+                sendError("Bu tarayıcı konum almayı desteklemiyor.");
                 return;
-            }
+            }}
 
             btn.disabled = true;
             btn.style.opacity = "0.7";
-            btn.innerHTML = "📍 Konum alınıyor...";
-            setMsg("GPS doğruluğu bekleniyor. Lütfen birkaç saniye bekle.");
+            btn.innerHTML = "📍 Konum deneniyor...";
+            setMsg("Arka planda deneniyor. Beklemeden devam edebilirsin.");
 
             navigator.geolocation.getCurrentPosition(
-                (position) => {
+                (position) => {{
                     const c = position.coords;
                     const url = new URL(window.parent.location.href);
 
@@ -2673,83 +2726,105 @@ def render_gps_button():
                     url.searchParams.set("gps_ts", Date.now());
 
                     window.parent.location.href = url.toString();
-                },
-                (error) => {
+                }},
+                (error) => {{
                     btn.disabled = false;
                     btn.style.opacity = "1";
-                    btn.innerHTML = "📍 Konumu Doğrula";
+                    btn.innerHTML = "{label}";
 
                     let text = "Konum alınamadı.";
 
-                    if (error.code === 1) {
+                    if (error.code === 1) {{
                         text = "Konum izni kapalı. Tarayıcı izinlerinden konumu aç.";
-                    } else if (error.code === 2) {
+                    }} else if (error.code === 2) {{
                         text = "Konum bulunamadı. GPS/Wi‑Fi açık mı kontrol et.";
-                    } else if (error.code === 3) {
-                        text = "Konum alma süresi doldu. Tekrar dene.";
-                    }
+                    }} else if (error.code === 3) {{
+                        text = "Konum alma süresi doldu. İşleme devam edebilirsin; sonra tekrar deneyebilirsin.";
+                    }}
 
-                    setMsg(text, "#b91c1c");
-                },
-                {
+                    sendError(text);
+                }},
+                {{
                     enableHighAccuracy: true,
-                    timeout: 20000,
-                    maximumAge: 0
-                }
+                    timeout: 7000,
+                    maximumAge: 60000
+                }}
             );
-        });
+        }}
+
+        btn.addEventListener("click", requestLocation);
+        {auto_script}
         </script>
         """,
-        height=100,
+        height=height,
     )
+
+
+def render_background_location_bar():
+    read_gps_query_result()
+
+    # Konum doğrulanmışsa sayfayı kalabalıklaştırma.
+    if st.session_state.get("location_confirmed", False):
+        accuracy = clean_cell(st.session_state.get("location_accuracy", ""))
+        text = "📍 Konum aktif"
+        if accuracy:
+            text += f" • {accuracy} m"
+        st.caption(text)
+        return
+
+    # İlk denemeyi arka planda yap. Kullanıcı ana akışa devam edebilir.
+    with st.expander("📍 Konum arka planda doğrulanıyor", expanded=False):
+        st.caption("Konum alınamazsa fiyat girişi yine çalışır. Sonra tekrar deneyebilirsin.")
+        render_gps_button(label="📍 Konumu Şimdi Dene", compact=True, auto=True)
+
+        error = clean_cell(st.session_state.get("location_error", ""))
+        if error:
+            st.warning(error)
+
+
 
 
 def render_location_screen():
     read_gps_query_result()
 
-    st.subheader("📍 Konum Doğrulama")
-    st.caption("Konumu doğrula; doğru GPS gelirse uygulama otomatik devam eder.")
+    st.subheader("📍 Konum")
+    st.caption("Konumu güncellemek istersen burada tekrar deneyebilirsin. Fiyat girişi için bu ekranda beklemek zorunda değilsin.")
 
-    error = clean_cell(st.session_state.get("location_error", ""))
-
-    if error:
-        st.warning(error)
-
-    render_gps_button()
+    render_gps_button(label="📍 Konumu Güncelle", compact=False, auto=False)
 
     has_coords = (
         bool(clean_cell(st.session_state.get("location_lat", ""))) and
         bool(clean_cell(st.session_state.get("location_lon", "")))
     )
 
+    error = clean_cell(st.session_state.get("location_error", ""))
+    if error:
+        st.warning(error)
+
     if has_coords:
         lat, lon, zoom = get_current_location_center()
         accuracy = clean_cell(st.session_state.get("location_accuracy", ""))
 
-        st.markdown(
-            f"""
-            <div style="
-                border:1px solid #cbd5e1;
-                border-radius:14px;
-                padding:10px;
-                background:#f8fafc;
-                margin:8px 0;
-            ">
-                <div style="font-size:12px; color:#475569; font-weight:800;">Son alınan konum</div>
-                <div style="font-size:15px; font-weight:900; color:#0f172a;">{st.session_state.location_lat}, {st.session_state.location_lon}</div>
-                <div style="font-size:11px; color:#64748b;">Doğruluk: {accuracy or "bilinmiyor"} m</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        st.success(f"Son konum: {st.session_state.location_lat}, {st.session_state.location_lon} • doğruluk: {accuracy or 'bilinmiyor'} m")
 
         if HAS_MAP:
             with st.expander("Haritada kontrol et"):
                 m = folium.Map(location=[lat, lon], zoom_start=zoom, dragging=False, zoom_control=False)
                 folium.Marker([lat, lon], tooltip="Algılanan konum").add_to(m)
                 st_folium(m, height=180, width=700, returned_objects=[])
-    else:
-        st.info("İlk kez kullanıyorsan tarayıcı konum izni isteyecek. İzin verip birkaç saniye bekle.")
+
+    c1, c2 = st.columns(2)
+
+    if c1.button("🏠 Ana Menüye Dön", use_container_width=True, type="primary"):
+        st.session_state.step = "research_start"
+        st.rerun()
+
+    if c2.button("▶️ Araştırmaya Devam Et", use_container_width=True):
+        if st.session_state.get("research_active", False):
+            st.session_state.step = "product_tree"
+        else:
+            st.session_state.step = "research_start"
+        st.rerun()
 
 
 
@@ -3119,28 +3194,7 @@ def render_user_list_builder_screen():
                         st.rerun()
 
     st.markdown("---")
-    st.markdown("#### Ürün ekle")
-    st.caption("İstersen kategorilerden butonla seç, istersen ürün adıyla ara.")
-
-    tab_buttons, tab_search = st.tabs(["Butonla seç", "Arayarak ekle"])
-
-    with tab_buttons:
-        render_user_list_tree_selector(list_id)
-
-    with tab_search:
-        query = st.text_input(
-            "Ürün ara",
-            key="user_list_search_query",
-            placeholder="Örn: domates, çupra, Galaxy A07, süt..."
-        )
-
-        if clean_cell(query):
-            results = search_products(query, limit=24)
-
-            if results.empty:
-                st.warning("Ürün bulunamadı.")
-            else:
-                render_add_products_to_user_list_grid(results, list_id, key_prefix="user_list_search_product")
+    render_normal_product_add_panel(target="list", list_id=list_id)
 
     st.markdown("---")
 
@@ -3673,81 +3727,247 @@ def render_tree_breadcrumb():
         st.caption(" > ".join(selected_parts))
 
 
-def render_product_tree_screen():
-    # Eski sürümden kalan ?add_pid=... linkleri varsa oturumu bozmadan temizle.
-    try:
-        if st.query_params.get("add_pid", ""):
-            st.query_params.clear()
-    except Exception:
-        pass
 
-    if not st.session_state.get("research_active", False):
-        st.warning("Ürün eklemek için önce Fiyat Araştırması Başlat.")
-        st.session_state.step = "research_start"
-        st.rerun()
+def reset_compact_picker(prefix, from_level=1):
+    for i in range(from_level, 6):
+        key = f"{prefix}_level_{i}"
+        if key in st.session_state:
+            st.session_state[key] = ""
 
-    st.subheader("Ürün seç")
-    render_tree_breadcrumb()
 
-    if any(clean_cell(st.session_state.get(f"level_{i}", "")) for i in range(1, 6)):
-        n1, n2 = st.columns(2)
+def get_compact_picker_df(prefix, upto_level=5):
+    df = products_df.copy()
 
-        if n1.button("⬅️ Bir üst kategoriye dön", use_container_width=True):
-            go_up_one_level()
-            st.rerun()
+    for i, col in enumerate(LEVEL_COLS, start=1):
+        if i > upto_level:
+            break
 
-        if n2.button("🏠 Başa dön", use_container_width=True):
-            reset_tree(1)
-            st.rerun()
+        selected = clean_cell(st.session_state.get(f"{prefix}_level_{i}", ""))
 
-    level_no, level_col, options = get_next_level_options()
-    filtered_products = get_filtered_products()
+        if selected:
+            df = df[df[col] == selected]
 
-    # İlk görünen alan her zaman ürün ağacı / ana kategoriler olsun.
-    if level_col and options:
-        if level_no == 1:
-            st.markdown("#### Ana Kategoriler")
-        else:
-            st.markdown("#### Seçimle ilerle")
+    return df
 
-        cols_count = 2 if len(options) < 8 else 3
-        cols = st.columns(cols_count)
 
-        for i, option in enumerate(options):
-            count = len(filtered_products[filtered_products[level_col] == option])
-            label = f"{option} ({count})"
+def get_level_options_for_compact_picker(prefix, level_no):
+    df = products_df.copy()
 
-            if cols[i % cols_count].button(
-                label,
-                key=safe_key(f"level_{level_no}", option, i),
-                use_container_width=True,
-            ):
-                st.session_state[f"level_{level_no}"] = option
-                reset_tree(level_no + 1)
-                st.rerun()
+    for i, col in enumerate(LEVEL_COLS, start=1):
+        if i >= level_no:
+            break
 
-    # Seçim yeterince daraldıysa veya tüm seviyeler seçildiyse ürünleri göster.
-    product_count = len(filtered_products)
+        selected = clean_cell(st.session_state.get(f"{prefix}_level_{i}", ""))
 
-    show_products = (
-        product_count <= 60 or
-        all(clean_cell(st.session_state.get(f"level_{i}", "")) for i in range(1, 6)) or
-        (level_col is None)
+        if selected:
+            df = df[df[col] == selected]
+
+    col = LEVEL_COLS[level_no - 1]
+    options = [clean_cell(x) for x in df[col].dropna().unique() if clean_cell(x)]
+    options = sort_tree_options(options, col)
+    return options
+
+
+def product_select_label(row):
+    product_id = clean_cell(row.get("product_id", ""))
+    title = format_product_title(row)
+    emoji = get_product_icon_emoji(product_id, title) if "get_product_icon_emoji" in globals() else ""
+    birim = clean_cell(row.get("birim", "")) or "Adet"
+    return f"{emoji} {title} • {birim}"
+
+
+def render_compact_category_product_picker(prefix, target="receipt", list_id="", title="Ürün seç"):
+    """
+    Normal mobil akış:
+    Dev buton ağacı yerine kategori dropdown + ürün dropdown.
+    Arka taraftaki ürün ağacı durur, kullanıcı sadece gerekli filtreleri görür.
+    """
+    st.markdown(f"#### {title}")
+
+    # Kategori seçimi: uzun butonlar yerine kısa selectbox'lar.
+    for level_no, col in enumerate(LEVEL_COLS, start=1):
+        options = get_level_options_for_compact_picker(prefix, level_no)
+        key = f"{prefix}_level_{level_no}"
+
+        # Daha önce seçilen değer yeni seçeneklerde yoksa widget oluşmadan temizle.
+        current = clean_cell(st.session_state.get(key, ""))
+
+        if current and current not in options:
+            st.session_state[key] = ""
+            reset_compact_picker(prefix, level_no + 1)
+            current = ""
+
+        # Alt seviyede seçenek yoksa daha fazla selectbox göstermeye gerek yok.
+        if not options:
+            break
+
+        label = [
+            "Ana kategori",
+            "Alt kategori",
+            "Bölüm",
+            "Marka / Tür",
+            "Detay",
+        ][level_no - 1]
+
+        select_options = [""] + options
+        index = select_options.index(current) if current in select_options else 0
+
+        def _reset_deeper(prefix=prefix, from_level=level_no + 1):
+            reset_compact_picker(prefix, from_level)
+
+        st.selectbox(
+            label,
+            select_options,
+            index=index,
+            key=key,
+            format_func=lambda x: "Seç" if x == "" else x,
+            on_change=_reset_deeper,
+        )
+
+        # Bir seviye boşsa daha alt seviyeleri göstermeyelim.
+        if not clean_cell(st.session_state.get(key, "")):
+            break
+
+    filtered = get_compact_picker_df(prefix)
+    filtered = filtered.copy()
+
+    if filtered.empty:
+        st.warning("Bu seçimde ürün yok.")
+        return
+
+    filtered["_name_order"] = filtered["urun_adi"].apply(normalize_for_search)
+    filtered = filtered.sort_values("_name_order")
+
+    st.caption(f"Uygun ürün: {len(filtered)}")
+
+    if len(filtered) > 300:
+        st.info("Çok fazla ürün var. Bir kategori daha seç veya arama sekmesini kullan.")
+        return
+
+    product_ids = filtered["product_id"].astype(str).tolist()
+    row_map = {clean_cell(row["product_id"]): row for _, row in filtered.iterrows()}
+
+    if not product_ids:
+        return
+
+    selected_pid = st.selectbox(
+        "Ürün",
+        product_ids,
+        key=f"{prefix}_selected_product",
+        format_func=lambda pid: product_select_label(row_map.get(clean_cell(pid), {})),
     )
 
-    if show_products:
-        st.markdown("#### Ürünler")
-        render_product_list(filtered_products)
+    selected_row = row_map.get(clean_cell(selected_pid))
+
+    if selected_row is None:
+        return
+
+    if target == "receipt":
+        button_label = "🛒 Fişe Ekle"
     else:
-        st.info(f"{product_count} ürün var. Listeyi açmak yerine yukarıdaki seçimlerle daralt.")
+        button_label = "➕ Listeye Ekle"
 
-    st.markdown("---")
+    if st.button(button_label, use_container_width=True, type="primary", key=safe_key("compact_add", prefix, target, selected_pid)):
+        if target == "receipt":
+            add_to_receipt(selected_row)
+        else:
+            add_product_to_user_list(list_id, selected_row)
 
-    with st.expander("🔎 Bulamazsan ara", expanded=False):
-        render_quick_search()
+        st.rerun()
 
-    st.markdown("---")
+
+def render_compact_search_product_picker(prefix, target="receipt", list_id="", title="Arayarak ekle"):
+    st.markdown(f"#### {title}")
+
+    query_key = f"{prefix}_query"
+    query = st.text_input(
+        "Ürün ara",
+        key=query_key,
+        placeholder="Örn: domates, çupra, Galaxy A07, süt..."
+    )
+
+    if not clean_cell(query):
+        st.caption("Arama yapabilir veya kategori seçimiyle ilerleyebilirsin.")
+        return
+
+    results = search_products(query, limit=60)
+
+    if results.empty:
+        st.warning("Ürün bulunamadı.")
+        return
+
+    results = results.copy()
+    results["_name_order"] = results["urun_adi"].apply(normalize_for_search)
+    results = results.sort_values("_name_order")
+
+    product_ids = results["product_id"].astype(str).tolist()
+    row_map = {clean_cell(row["product_id"]): row for _, row in results.iterrows()}
+
+    selected_pid = st.selectbox(
+        "Arama sonucu",
+        product_ids,
+        key=f"{prefix}_search_selected_product",
+        format_func=lambda pid: product_select_label(row_map.get(clean_cell(pid), {})),
+    )
+
+    selected_row = row_map.get(clean_cell(selected_pid))
+
+    if selected_row is None:
+        return
+
+    button_label = "🛒 Fişe Ekle" if target == "receipt" else "➕ Listeye Ekle"
+
+    if st.button(button_label, use_container_width=True, type="primary", key=safe_key("compact_search_add", prefix, target, selected_pid)):
+        if target == "receipt":
+            add_to_receipt(selected_row)
+        else:
+            add_product_to_user_list(list_id, selected_row)
+
+        st.rerun()
+
+
+def render_normal_product_add_panel(target="receipt", list_id=""):
+    if target == "receipt":
+        prefix = "normal_picker"
+        title = "Ürün ekle"
+    else:
+        prefix = f"user_list_picker_{clean_cell(list_id)}"
+        title = "Listeye ürün ekle"
+
+    st.markdown(f"### {title}")
+    st.markdown('<div class="compact-note">Kategori ağacı arkada çalışıyor; ekranda sadece seçim kutuları var. Böylece mobilde sayfa uzamaz.</div>', unsafe_allow_html=True)
+
+    tab_cat, tab_search = st.tabs(["Kategoriyle seç", "Arayarak ekle"])
+
+    with tab_cat:
+        render_compact_category_product_picker(prefix, target=target, list_id=list_id, title="Kategoriyle seç")
+
+    with tab_search:
+        render_compact_search_product_picker(prefix, target=target, list_id=list_id, title="Arayarak ekle")
+
+
+
+def render_product_tree_screen():
+    if not st.session_state.get("research_active", False):
+        st.warning("Önce fiyat araştırması başlat.")
+        if st.button("Fiyat Araştırması Başlat", use_container_width=True, type="primary"):
+            start_research_session(st.session_state.research_start_mode)
+            st.rerun()
+        return
+
+    st.subheader("💰 Fiyat Girişi")
+
+    # Normal kullanımda önce fiş/liste görünür; ürün ekleme destek panelinde kalır.
     render_receipt_panel()
+
+    st.markdown("---")
+
+    expanded = not bool(st.session_state.receipt_items)
+
+    with st.expander("➕ Ürün ekle", expanded=expanded):
+        render_normal_product_add_panel(target="receipt")
+
+
 
 
 def handle_add_product_query(df):
